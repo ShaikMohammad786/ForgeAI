@@ -152,8 +152,16 @@ class HybridRetriever:
             if q_tokens
             else np.zeros((len(self.chunks),), dtype=np.float32)
         )
-        # Smooth saturation into [0, 1) so zero lexical match == 0.0
-        bm25_cal = np.where(bm25_raw > 0, bm25_raw / (bm25_raw + 3.5), 0.0)
+        # Smooth saturation into [0, 1); also include direct lexical coverage
+        # so small corpora (where BM25 IDF can be <=0) still preserve keyword precision.
+        q_set = {t for t in q_tokens if len(t) >= 3}
+        lex_cov = np.zeros((len(self.chunks),), dtype=np.float32)
+        if q_set:
+            for i, c in enumerate(self.chunks):
+                c_toks = set(_tokenize(f"{c.heading} {c.source} {c.text}"))
+                lex_cov[i] = sum(1 for t in q_set if t in c_toks) / len(q_set)
+        bm25_sat = np.where(bm25_raw > 0, bm25_raw / (bm25_raw + 3.5), 0.0)
+        bm25_cal = np.maximum(bm25_sat, lex_cov * 0.85)
 
         dense_raw = np.zeros((len(self.chunks),), dtype=np.float32)
         q_vec = self._embed_query(effective_query)
@@ -163,9 +171,9 @@ class HybridRetriever:
         if self._tfidf_fallback:
             dense_cal = np.clip(dense_raw, 0.0, 1.0)
         else:
-            # BGE-small cosine baseline for random English text is ~0.35-0.46;
-            # shift & stretch so genuine semantic hits rise cleanly above noise.
-            dense_cal = np.clip((dense_raw - 0.38) / 0.45, 0.0, 1.0)
+            # BGE-small cosine for unrelated queries typically sits around 0.40-0.55;
+            # shift & stretch so genuine semantic hits separate cleanly from noise.
+            dense_cal = np.clip((dense_raw - 0.50) / 0.35, 0.0, 1.0)
 
         alpha = cfg.hybrid_alpha if self._dense_matrix is not None else 0.0
         hybrid_scores = (1.0 - alpha) * bm25_cal + alpha * dense_cal
@@ -176,10 +184,10 @@ class HybridRetriever:
         rrf_bonus = np.zeros((len(self.chunks),), dtype=np.float32)
         k_rrf = 30.0
         for rank, idx in enumerate(bm25_order[:20]):
-            if bm25_raw[idx] > 0:
+            if bm25_cal[idx] > 0.15:
                 rrf_bonus[idx] += 1.0 / (k_rrf + rank + 1)
         for rank, idx in enumerate(dense_order[:20]):
-            if dense_raw[idx] > 0.45:
+            if dense_raw[idx] > 0.56:
                 rrf_bonus[idx] += 1.0 / (k_rrf + rank + 1)
 
         final_scores = np.clip(hybrid_scores + 1.5 * rrf_bonus, 0.0, 1.0)
