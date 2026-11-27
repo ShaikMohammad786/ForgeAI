@@ -31,8 +31,12 @@ def test_hr_brief_never_attaches_weather_or_csv_tools(tmp_path: Path) -> None:
     elig_names = {t.name for t in elig}
     assert "open_meteo_weather" not in elig_names
     assert "csv_lookup" not in elig_names
+    assert "json_record_lookup" not in elig_names
+    assert "currency_converter" not in elig_names
+    assert "unit_converter" not in elig_names
     assert "open_meteo_weather" in rejected
     assert "csv_lookup" in rejected
+    assert "currency_converter" in rejected
 
 
 def test_groundability_guard_blocks_ungroundable_brief_and_flags_partial_gaps(tmp_path: Path) -> None:

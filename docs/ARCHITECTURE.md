@@ -45,8 +45,8 @@ Small local models (`1.5B–3B`) fail in predictable ways: broken JSON, overly e
 1. **JSON Repair & Schema Coercion (`llm/base.py`)**: Every structured call validates against Pydantic v2, retries with explicit schema error feedback, extracts fenced/substring JSON blocks, and applies deterministic defaults on non-critical fields.
 2. **Evidence-First Groundability Guard (`factory/groundability.py`)**: Before any agent is generated, the factory extracts atomic capabilities/claims from the brief and queries the actual document index (BM25 + Dense vector similarity + CSV column schema inspection). Any claim with zero supporting evidence is marked `UNSUPPORTED` and automatically added to `must_refuse_topics` with an explicit gap warning—preventing the factory from generating prompts that invite fabrication.
 3. **Deterministic + LLM Tool Pruning (`tools/registry.py`, `factory/generator.py`)**:
-   - Four sandboxed tools exist: `csv_lookup`, `calculator`, `open_meteo_weather`, `current_date`.
-   - Deterministic capability gates block impossible tools first (e.g., `csv_lookup` cannot attach if zero `.csv` files exist in the corpus; `open_meteo_weather` requires explicit meteorological/sea-state/forecast intent in the brief/docs).
+   - Seven sandboxed tools exist: `csv_lookup`, `json_record_lookup`, `calculator`, `unit_converter`, `currency_converter`, `open_meteo_weather`, and `current_date`.
+   - Deterministic capability gates block impossible tools first (e.g., `csv_lookup` cannot attach if zero `.csv` files exist; `json_record_lookup` requires `.json` files; `open_meteo_weather`, `currency_converter`, and `unit_converter` require explicit domain intent).
    - The LLM selector only chooses from eligible tools and must justify each with a brief quote; post-checks strip any unjustified attachment.
 4. **Hybrid Retrieval with Score Gating (`retrieval/hybrid.py`)**:
    - Heading/paragraph-aware chunking for PDFs/Markdown/TXT plus structured row-summary + schema chunking for CSVs.

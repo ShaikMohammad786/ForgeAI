@@ -11,8 +11,11 @@ from forgeai.ingestion.loader import LoadedCorpus
 from forgeai.schemas.agent import ToolBinding
 from forgeai.tools.calculator import run_calculator
 from forgeai.tools.csv_lookup import run_csv_lookup
+from forgeai.tools.currency_converter import run_currency_converter
 from forgeai.tools.current_date import run_current_date
 from forgeai.tools.http_weather import run_open_meteo_weather
+from forgeai.tools.json_lookup import run_json_record_lookup
+from forgeai.tools.unit_converter import run_unit_converter
 
 
 class ToolAuthorizationError(PermissionError):
@@ -28,7 +31,10 @@ class ToolSpec:
     args_schema_hint: str
     handler: Callable[[dict[str, Any], Path], str]
     requires_csv: bool = False
+    requires_json: bool = False
     weather_intent_required: bool = False
+    fx_intent_required: bool = False
+    unit_intent_required: bool = False
 
 
 TOOL_CATALOG: dict[str, ToolSpec] = {
@@ -39,11 +45,32 @@ TOOL_CATALOG: dict[str, ToolSpec] = {
         handler=run_csv_lookup,
         requires_csv=True,
     ),
+    "json_record_lookup": ToolSpec(
+        name="json_record_lookup",
+        description="Search and filter structured JSON record files inside the document corpus.",
+        args_schema_hint='{"filename": "optional.json", "query": "search terms", "limit": 10}',
+        handler=run_json_record_lookup,
+        requires_json=True,
+    ),
     "calculator": ToolSpec(
         name="calculator",
         description="Evaluate exact arithmetic expressions, totals, percentages, discounts, or unit math.",
         args_schema_hint='{"expression": "(1250 * 4) * 1.15"}',
         handler=run_calculator,
+    ),
+    "unit_converter": ToolSpec(
+        name="unit_converter",
+        description="Convert engineering, logistics, and maritime units (kg/lb/mt, km/mi/nm, bar/psi, C/F, knots/kmh, L/gal).",
+        args_schema_hint='{"value": 22.5, "from_unit": "kg", "to_unit": "lb"}',
+        handler=run_unit_converter,
+        unit_intent_required=True,
+    ),
+    "currency_converter": ToolSpec(
+        name="currency_converter",
+        description="Convert amounts across ISO currencies using live keyless Frankfurter ECB FX rates.",
+        args_schema_hint='{"amount": 1500, "from_currency": "USD", "to_currency": "EUR"}',
+        handler=run_currency_converter,
+        fx_intent_required=True,
     ),
     "open_meteo_weather": ToolSpec(
         name="open_meteo_weather",
@@ -66,6 +93,16 @@ _WEATHER_PATTERNS = re.compile(
     re.IGNORECASE,
 )
 
+_FX_PATTERNS = re.compile(
+    r"\b(currency|exchange\s*rate|fx|forex|convert\s*(usd|eur|gbp|sgd|jpy|aed)|eur\b|gbp\b|sgd\b|jpy\b|multi-currency)\b",
+    re.IGNORECASE,
+)
+
+_UNIT_PATTERNS = re.compile(
+    r"\b(unit\s*conver|convert\s*(kg|lb|bar|psi|km|nm|celsius|fahrenheit|knots|liters)|nautical\s*mile|psi\b|bar\b|weight_kg|tonnes?|knots?)\b",
+    re.IGNORECASE,
+)
+
 _NUMERIC_PATTERNS = re.compile(
     r"\b(calculate|calculation|total|cost|price|pricing|budget|discount|tax|freight|quote|lead\s*time|quantity|qty|salary|allowance|reimburse|expense|days|percentage|percent|ratio|sum|margin|invoice|procurement|order|spares|parts|fee)\b",
     re.IGNORECASE,
@@ -85,6 +122,7 @@ def evaluate_tool_eligibility(
     eligible: list[ToolSpec] = []
     rejected: dict[str, str] = {}
 
+    has_json = any(d.summary.doc_type == "json" for d in corpus.documents)
     combined_hints = brief + "\n" + " ".join(corpus.filenames) + "\n" + " ".join(
         d.summary.preview for d in corpus.documents
     )
@@ -94,11 +132,25 @@ def evaluate_tool_eligibility(
             rejected[name] = "Excluded deterministically: no CSV files exist in the document corpus."
             continue
 
+        if spec.requires_json and not has_json:
+            rejected[name] = "Excluded deterministically: no JSON record files exist in the document corpus."
+            continue
+
         if spec.weather_intent_required and not _WEATHER_PATTERNS.search(brief):
-            # Also require explicit weather/forecast intent in the brief itself
-            # so unrelated docs mentioning 'rain check' or ports without weather intent don't attach it.
             rejected[name] = (
                 "Excluded deterministically: user brief does not request weather or meteorological data."
+            )
+            continue
+
+        if spec.fx_intent_required and not _FX_PATTERNS.search(brief):
+            rejected[name] = (
+                "Excluded deterministically: user brief does not request currency conversion or FX rates."
+            )
+            continue
+
+        if spec.unit_intent_required and not (_UNIT_PATTERNS.search(brief) or _UNIT_PATTERNS.search(combined_hints)):
+            rejected[name] = (
+                "Excluded deterministically: no engineering/logistics unit conversion intent detected."
             )
             continue
 

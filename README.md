@@ -83,4 +83,4 @@ forgeai ui
 ---
 
 ## Project Structure
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for architecture diagrams and [docs/ANTIGRAVITY_SPEC.md](docs/ANTIGRAVITY_SPEC.md) for the complete specification.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/forgeai_architecture.png](docs/forgeai_architecture.png) for architecture details and the end-to-end flowchart.

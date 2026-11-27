@@ -83,3 +83,29 @@ def test_csv_lookup_filters_and_aggregates(tmp_path: Path) -> None:
         docs_dir=tmp_path,
     )
     assert "500" in res
+
+
+def test_unit_converter_and_json_record_lookup(tmp_path: Path) -> None:
+    (tmp_path / "vessels.json").write_text(
+        '[{"imo": "9312456", "name": "MV Oceanic Star", "port": "Singapore"}]',
+        encoding="utf-8",
+    )
+    bindings = [
+        ToolBinding(name="unit_converter", description="units", justification="test"),
+        ToolBinding(name="json_record_lookup", description="json", justification="test"),
+    ]
+    u_out = execute_tool(
+        "unit_converter",
+        {"value": 100, "from_unit": "bar", "to_unit": "psi"},
+        authorized_tools=bindings,
+        docs_dir=tmp_path,
+    )
+    assert "1450.37" in u_out
+
+    j_out = execute_tool(
+        "json_record_lookup",
+        {"query": "Oceanic"},
+        authorized_tools=bindings,
+        docs_dir=tmp_path,
+    )
+    assert "9312456" in j_out
