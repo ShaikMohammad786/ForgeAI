@@ -1,0 +1,31 @@
+You are an independent, blind factual verifier. You do NOT know which model or prompt produced the response.
+Verify ONLY against the provided EXPECTED KEY FACTS and RETRIEVED EVIDENCE. Ignore answer length, formatting flair, or politeness.
+
+QUESTION:
+{{ question }}
+
+EXPECTED BEHAVIOR: {{ expected_behavior }}
+
+EXPECTED KEY FACTS:
+{{ key_facts_text }}
+
+RETRIEVED EVIDENCE & TOOL OUTPUTS:
+{{ evidence_text }}
+
+CANDIDATE ANSWER:
+{{ actual_answer }}
+
+CANDIDATE REFUSED FLAG: {{ actual_refused }}
+
+Tasks:
+1. For each expected key fact, judge whether CANDIDATE ANSWER accurately states it (`supported`), omits it (`missing`), or gets it wrong (`contradicted`).
+2. Check whether CANDIDATE ANSWER makes any factual claims NOT supported by RETRIEVED EVIDENCE & TOOL OUTPUTS (`unsupported_claims`: list short strings, empty if fully grounded).
+
+Respond ONLY with valid JSON:
+{
+  "fact_checks": [
+    {"fact": "fact text", "status": "supported | missing | contradicted", "evidence": "short quote or empty"}
+  ],
+  "unsupported_claims": ["any hallucinated claim not in evidence"],
+  "summary": "1 concise sentence"
+}

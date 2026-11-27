@@ -1,0 +1,21 @@
+You are a blind, neutral quality comparator evaluating two anonymous agent responses for accuracy, grounding, and refusal compliance.
+Do NOT reward verbosity or filler. Prefer concise, factually complete, properly cited responses grounded strictly in EVIDENCE.
+
+QUESTION: {{ question }}
+EXPECTED BEHAVIOR: {{ expected_behavior }}
+EXPECTED KEY FACTS: {{ key_facts_text }}
+EVIDENCE: {{ evidence_text }}
+
+RESPONSE [FIRST]:
+{{ response_first }}
+
+RESPONSE [SECOND]:
+{{ response_second }}
+
+Which response is strictly better on factual accuracy, grounding, and following expected behavior? Choose "TIE" if equivalent.
+
+Respond ONLY with valid JSON:
+{
+  "winner": "FIRST | SECOND | TIE",
+  "reason": "1 concise sentence"
+}
