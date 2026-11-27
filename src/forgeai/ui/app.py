@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -33,7 +34,32 @@ from forgeai.schemas.requirements import RequirementsDoc
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DEMOS_DIR = REPO_ROOT / "demos"
-RUNS_DIR = REPO_ROOT / "runs"
+
+
+def _get_writable_runs_dir() -> Path:
+    preferred = REPO_ROOT / "runs"
+    try:
+        preferred.mkdir(parents=True, exist_ok=True)
+        probe = preferred / ".write_test"
+        probe.write_text("ok", encoding="utf-8")
+        probe.unlink(missing_ok=True)
+        return preferred
+    except Exception:
+        fallback = Path(tempfile.gettempdir()) / "forgeai_runs"
+        fallback.mkdir(parents=True, exist_ok=True)
+        return fallback
+
+
+RUNS_DIR = _get_writable_runs_dir()
+
+
+def _sync_streamlit_secrets_to_env() -> None:
+    try:
+        for k in ("GEMINI_API_KEY", "GOOGLE_API_KEY", "OLLAMA_HOST", "FORGEAI_PROVIDER"):
+            if k in st.secrets and not os.environ.get(k):
+                os.environ[k] = str(st.secrets[k])
+    except Exception:
+        pass
 
 
 def _discover_built_agents() -> list[Path]:
@@ -52,6 +78,7 @@ def main() -> None:
         page_icon="⚒️",
         layout="wide",
     )
+    _sync_streamlit_secrets_to_env()
     cfg = get_settings()
     backends = discover_backends(cfg)
 
@@ -63,10 +90,14 @@ def main() -> None:
     # Sidebar: Provider Selector (Ollama Local vs Gemini Interactions API from .env)
     with st.sidebar:
         st.header("Model Backend")
+        default_is_gemini = (
+            cfg.provider == "gemini"
+            or (not backends.ollama_available and backends.gemini_available)
+        )
         provider_label = st.radio(
             "Select LLM Provider",
             options=["Ollama (Local Open Models)", "Gemini API (Interactions API / .env)"],
-            index=0 if cfg.provider != "gemini" else 1,
+            index=1 if default_is_gemini else 0,
         )
         selected_provider = "ollama" if provider_label.startswith("Ollama") else "gemini"
 
