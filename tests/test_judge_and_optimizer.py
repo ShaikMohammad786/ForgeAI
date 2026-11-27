@@ -174,3 +174,44 @@ def test_optimizer_rolls_back_when_patch_worsens_score(tmp_path: Path) -> None:
     final_agent, cards, iters = run_optimization_loop(agent, cases, rt, llm, llm, budget, max_iterations=1, use_llm_judge=False)
     assert iters[0].accepted is False
     assert "PATCH_MARKER" not in final_agent.system_prompt
+
+
+def test_judge_clamps_fact_recall_when_small_judge_splits_facts() -> None:
+    class _SplittingJudge(LLMProvider):
+        provider_name = "split"
+        def complete(self, messages, *, temperature=0.1, max_tokens=1200, json_mode=False, json_schema=None):
+            return LLMResponse(
+                text=json.dumps({
+                    "fact_checks": [
+                        {"fact": "24", "status": "supported", "evidence": "24"},
+                        {"fact": "days", "status": "supported", "evidence": "days"},
+                        {"fact": "annual", "status": "supported", "evidence": "annual"},
+                    ],
+                    "unsupported_claims": [],
+                    "summary": "split 1 fact into 3",
+                }),
+                model="s", provider="split", prompt_tokens=5, completion_tokens=5, total_tokens=10,
+            )
+
+    chunk = DocumentChunk("id1", "hr.md", "hr.md", "md", "Sec 1", "Leave", "Annual leave is 24 days.")
+    hit = RetrievedChunk(chunk=chunk, score=0.9, bm25_score=0.9, dense_score=0.9)
+    case = EvalCase(
+        case_id="s1",
+        category="answerable",
+        question="How many annual leave days?",
+        expected_behavior="answer",
+        source_documents=["hr.md"],
+        key_facts=["Annual leave is 24 days."],
+    )
+    verdict = evaluate_single_case(
+        case,
+        ExecutionTrace(
+            response=AgentResponse(answer="Annual leave is 24 days.", citations=[{"source": "hr.md", "excerpt": "24 days"}]),
+            retrieved_chunks=[hit],
+        ),
+        _SplittingJudge("s"),
+        {"hr.md"},
+        use_llm_judge=True,
+    )
+    assert 0.0 <= verdict.metrics.fact_recall <= 1.0
+    assert verdict.passed is True

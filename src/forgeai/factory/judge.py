@@ -209,7 +209,9 @@ def evaluate_single_case(
                         for fc in parsed.fact_checks
                         if fc.status.lower().strip() == "supported"
                     )
-                    llm_recall = sup_count / max(1, len(case.key_facts))
+                    # Small judges occasionally split 1 key_fact into multiple checks; bound to [0, 1].
+                    denom = max(1, len(case.key_facts), len(parsed.fact_checks))
+                    llm_recall = min(1.0, max(0.0, sup_count / denom))
                     fact_checks = [fc.model_dump() for fc in parsed.fact_checks]
                 # Filter judge's unsupported claims against actual evidence text so paraphrases aren't penalized
                 unsupported_claims = [
@@ -230,7 +232,8 @@ def evaluate_single_case(
                 for f in case.key_facts
             ]
 
-        fact_recall = round(0.5 * det_recall + 0.5 * llm_recall, 3)
+        fact_recall = round(min(1.0, max(0.0, 0.5 * det_recall + 0.5 * llm_recall)), 3)
+        numeric_acc = min(1.0, max(0.0, numeric_acc))
 
         # Groundedness check: unverified numbers/SKUs are high-severity hallucination signals
         ans_nums = set(_extract_numbers(resp.answer))
