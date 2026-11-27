@@ -170,10 +170,10 @@ def evaluate_single_case(
         numeric_acc = 1.0 if actual_refused else 0.0
         groundedness = 1.0 if actual_refused else 0.0
     elif actual_refused:
-        # False refusal on an answerable case
+        # False refusal on an answerable case: never reward groundedness for dodging
         fact_recall = 0.0
         numeric_acc = 0.0
-        groundedness = 1.0
+        groundedness = 0.0
     else:
         numeric_acc = _compute_numeric_accuracy(case.key_facts, resp.answer)
         det_hits = [
@@ -232,11 +232,11 @@ def evaluate_single_case(
 
         fact_recall = round(0.5 * det_recall + 0.5 * llm_recall, 3)
 
-        # Groundedness check: penalize unsupported numbers in answer not in evidence, plus LLM unsupported claims
+        # Groundedness check: unverified numbers/SKUs are high-severity hallucination signals
         ans_nums = set(_extract_numbers(resp.answer))
         ev_nums = set(_extract_numbers(evidence_text))
         hallucinated_nums = [n for n in ans_nums if n not in ev_nums]
-        penalty = 0.25 * len(unsupported_claims) + 0.3 * len(hallucinated_nums)
+        penalty = 0.25 * len(unsupported_claims) + 0.45 * len(hallucinated_nums)
         groundedness = round(max(0.0, 1.0 - penalty), 3)
 
     if expected_refuse:
@@ -353,13 +353,13 @@ def evaluate_agent_on_cases(
     label: str,
     use_llm_judge: bool = True,
 ) -> IterationScorecard:
-    """Evaluate AgentRuntime over a list of EvalCases and build IterationScorecard."""
+    """Evaluate AgentRuntime over a list of EvalCases in two model-batched passes (prevents VRAM thrashing)."""
     valid_sources = set(runtime.corpus.filenames)
-    verdicts: list[CaseVerdict] = []
-
-    for case in cases:
-        trace = runtime.ask(case.question)
-        verdict = evaluate_single_case(
+    # Phase A: run all agent generations together while generator model stays resident in VRAM
+    traces: list[ExecutionTrace] = [runtime.ask(case.question) for case in cases]
+    # Phase B: judge all collected traces together while judge model stays resident in VRAM
+    verdicts: list[CaseVerdict] = [
+        evaluate_single_case(
             case,
             trace,
             judge_llm,
@@ -368,7 +368,8 @@ def evaluate_agent_on_cases(
             min_score_threshold=runtime.agent.retrieval.min_score_threshold,
             use_llm_judge=use_llm_judge,
         )
-        verdicts.append(verdict)
+        for case, trace in zip(cases, traces)
+    ]
 
     n = max(1, len(verdicts))
     passed_count = sum(1 for v in verdicts if v.passed)
