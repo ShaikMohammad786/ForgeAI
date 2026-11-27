@@ -2,22 +2,40 @@
 
 ForgeAI is an autonomous **Agent Factory** designed to operate reliably even when every reasoning step runs on a small, imperfect open model (e.g., `qwen2.5:1.5b` / `qwen2.5:3b` via local Ollama) while seamlessly supporting **Google Gemini (Interactions API)** from `.env` or UI selection.
 
-## 1. End-to-End Pipeline
+## 1. End-to-End Architecture Flowchart (Simple View)
 
 ```mermaid
 flowchart TD
-    A["1-Paragraph Brief + Document Folder"] --> B["Document Ingestion & Hybrid Indexer\n(PDF/CSV/MD/TXT + BM25 + FastEmbed BGE-Small)"]
-    B --> C["Stage 1: Intake Interviewer\n(<=5 dynamic clarifying questions, interactive or unattended)"]
-    C --> D["Stage 2: Groundability Guard\n(Evidence retrieval + gap detection; moves ungroundable asks to must_refuse)"]
-    D --> E{"Human Checkpoint\n(Interactive approve/edit\nor auto-checkpoint)"}
-    E --> F["Stage 3: Agent Generator + Prompt Tournament\n(2-3 candidate prompts, deterministic+LLM tool pruning, output contract)"]
-    F --> G["Stage 4: Document-Grounded Eval Generator\n(>=20 verified cases: answerable, out-of-scope, multi-doc edge cases)"]
-    G --> H["Stage 5: Hybrid Debiased Judge\n(Deterministic hard gates + atomic NLI + position/verbosity defenses)"]
-    H --> I{"Iteration <= 3 &\nBudget & Gain OK?"}
-    I -- "Failures Found" --> J["Stage 6: Critic-Optimizer\n(Classify: retrieval_miss / prompt_defect / hallucination / wrong_refusal\nApply targeted diff patch + rollback guard)"]
-    J --> H
-    I -- "Done / Stopped" --> K["Stage 7: Honest Report & Runnable Artifact Bundle\n(agent_definition.yaml, scorecard, iteration_log, report.md)"]
-    K --> L["Stage 8: Generic Runtime (CLI & Streamlit UI)\n+ Regression Mode"]
+    START(["User Input: 1-Paragraph Brief + Docs Folder"]) --> LLM["Model Router (.env or UI Selector)\nLocal Ollama (qwen2.5:3b / 1.5b)\nOR Gemini Interactions API"]
+    START --> ING["1. Document Ingestion & Manifest\nPDF, CSV, Markdown, TXT, JSON + SHA-256 Hashes"]
+    ING --> IDX["2. Chunker & Hybrid Search Index\nHeading/Row Chunks + BM25 + FastEmbed BGE-Small"]
+
+    IDX --> INT["3. Intake Interviewer\nAsks <=5 Clarifying Questions (Interactive or Auto)"]
+    INT --> GRD["4. Groundability Guard\nMatches Brief Topics vs Document Evidence"]
+
+    GRD --> GCHECK{"Can Docs Support\nthe Brief?"}
+    GCHECK -- "0% Grounded" --> HALT["STOP Safely & Report Gaps\nRefuses to Build Hallucinating Agent"]
+    GCHECK -- "Grounded or Partial\n(Unsupported -> Must-Refuse)" --> CHK{"5. Human Checkpoint\nApprove / Edit Requirements\n(Auto in --unattended)"}
+
+    CHK -- "Approved" --> TOOLGATE["6. Tool Pruning Gate (4 Tools)\ncsv_lookup | calculator | open_meteo_weather | current_date\nBlocks Unneeded Tools (e.g., No Weather for HR)"]
+    TOOLGATE --> GEN["7. Agent Generator\nCreates Declarative YAML + 3 Prompt Variants\n+ Retrieval Config + JSON Output Contract"]
+
+    GEN --> EVALGEN["8. Auto Eval Generator\nCreates >=20 Verified Cases from Docs\n(Answerable + Out-of-Scope + Multi-Doc Edge Cases)"]
+    EVALGEN --> TOURN["9. Prompt Tournament\nTests 3 Prompt Variants with Position-Swapped\nPairwise Judge (A vs B and B vs A) -> Picks Winner"]
+
+    TOURN --> JUDGE["10. Hybrid Debiased Judge\nDeterministic Checks (JSON, Citations, Numbers, Refusal)\n+ Blind Atomic Fact NLI (Cross-Model Judge)"]
+    JUDGE --> LOOP{"Pass < 100% AND\nIter <= 3 AND\nBudget + Gain OK?"}
+
+    LOOP -- "Yes: Failures Found" --> CRITIC["11. Critic-Optimizer\nTags Each Failure: retrieval_miss | prompt_defect\nhallucination | wrong_refusal\nApplies Targeted Diff Patch (Not Full Rewrite)"]
+    CRITIC --> ROLL{"Did Score\nImprove?"}
+    ROLL -- "Yes" --> JUDGE
+    ROLL -- "No" --> REVERT["Rollback to Best Version\nLog Honest Result"] --> JUDGE
+
+    LOOP -- "Done / Budget Stop" --> REPORT["12. Ship Artifact Bundle + Honest Report\nagent_definition.yaml | eval_set.json | scorecard.md\niteration_log.md | report.md (What Still Fails & Why)"]
+
+    REPORT --> RUN["13. Generic Runnable Agent\nCLI (forgeai chat) & Streamlit Web UI\nLoads Any Agent -> Hybrid RAG -> Safe Tools -> JSON Output"]
+    REPORT --> REG["14. Regression Mode (forgeai regress)\nDocs Change -> Diff SHA-256 -> Re-run Old Evals -> Breakage Report"]
+    REPORT --> BASE["15. Human Baseline Benchmark\nHand-Written Agent vs ForgeAI on Same Evals"]
 ```
 
 ## 2. Why This Architecture Survives Small Open Models
