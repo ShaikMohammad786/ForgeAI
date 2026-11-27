@@ -1,0 +1,21 @@
+# Python / virtual environments
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+dist/
+build/
+
+# Secrets & local OS files
+.env
+.env.local
+.DS_Store
+Thumbs.db
+
+# Runtime scratch / cache (never ignore committed demos/*/output/)
+.forgeai_cache/
+runs/
+*.log
