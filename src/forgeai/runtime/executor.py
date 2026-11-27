@@ -183,6 +183,14 @@ class AgentRuntime:
                 data["confidence"] = "medium"
 
             resp = AgentResponse.model_validate(data)
+            if not resp.refused and re.search(
+                r"\b(cannot answer|unable to answer|not covered in the provided|outside the scope|cannot verify)\b",
+                resp.answer,
+                re.I,
+            ):
+                resp.refused = True
+                if not resp.refusal_reason:
+                    resp.refusal_reason = "Refusal detected in answer text."
             return resp, True, False
         except Exception:
             # Repair fallback while honestly recording raw_contract_valid=False
@@ -303,13 +311,15 @@ class AgentRuntime:
 
                 tool_outputs.append({"tool": t_name, "args": t_args, "output": obs})
                 messages.append({"role": "assistant", "content": json.dumps(parsed)})
+                follow_up = (
+                    "If another authorized tool (e.g. calculator) is needed, return Option A; otherwise return Option B final JSON with exact grounded answer and citations."
+                    if step < max_steps - 1
+                    else "Now return Option B final JSON with exact grounded answer and citations."
+                )
                 messages.append(
                     {
                         "role": "user",
-                        "content": (
-                            f"TOOL OBSERVATION ({t_name}):\n{obs[:1800]}\n\n"
-                            "Now return Option B final JSON with exact grounded answer and citations."
-                        ),
+                        "content": f"TOOL OBSERVATION ({t_name}):\n{obs[:1800]}\n\n{follow_up}",
                     }
                 )
                 continue
