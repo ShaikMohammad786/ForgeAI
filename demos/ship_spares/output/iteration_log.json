@@ -1,0 +1,36 @@
+[
+  {
+    "iteration": 1,
+    "dominant_failure_category": "wrong_refusal",
+    "failure_ids_addressed": [
+      "eval_17",
+      "eval_18",
+      "eval_19",
+      "eval_20",
+      "eval_21"
+    ],
+    "diagnosis_summary": "Dominant failure is `wrong_refusal` for out-of-scope questions.",
+    "changes": [
+      {
+        "field_path": "retrieval.min_score_threshold",
+        "old_value": 0.08,
+        "new_value": 0.12,
+        "rationale": "Raise score gate to enforce refusal on out-of-scope queries"
+      },
+      {
+        "field_path": "system_prompt",
+        "old_value": "(len=733)",
+        "new_value": "+ If the question is out of scope, refuse it based on provided documents and current date.",
+        "rationale": "Clarify answer-vs-refuse boundary"
+      }
+    ],
+    "score_before": 0.7026,
+    "score_after": 0.7227,
+    "pass_rate_before": 0.5833,
+    "pass_rate_after": 0.625,
+    "accepted": true,
+    "decision_reason": "Accepted patch (+4.2pp pass rate, +0.020 composite score).",
+    "tokens_used": 67163,
+    "duration_seconds": 221.03
+  }
+]

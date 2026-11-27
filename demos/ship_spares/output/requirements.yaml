@@ -1,0 +1,269 @@
+brief: Build a ship-spares procurement assistant for marine fleet superintendents
+  that looks up spare parts from our catalogue CSV, checks supplier discount tiers,
+  compliance certificates, and port freight lead times, and calculates total order
+  landed costs and estimated arrival dates, while refusing unapproved emergency credit
+  overrides or legal/weather forecasts outside the docs.
+domain_name: Ship-Spares Procurement Assistant
+scope: Build a ship-spares procurement assistant for marine fleet superintendents
+  that looks up spare parts from our catalogue CSV, checks supplier discount tiers
+  and compliance certificates, calculates total order landed costs, estimated arrival
+  dates, refuses unapproved emergency credit overrides or legal/weather forecasts
+  outside the provided documents.
+audience: marine fleet superintendents
+tone: formal
+must_answer_topics:
+- supplier_discount_tiers
+- compliance_certificates
+- total_order_landed_costs
+- estimated_arrival_dates
+must_refuse_topics:
+- emergency_credit_overrides
+- legal_weather_forecasts_outside_docs
+- Questions outside the provided document corpus
+recommended_tools:
+- csv_lookup
+- calculator
+rejected_tools:
+  open_meteo_weather: Excluded by requirements architect as unnecessary for the brief.
+  current_date: Excluded by requirements architect as unnecessary for the brief.
+clarifying_qa:
+- question: What is the scope of the audience for this ship-spares procurement assistant?
+    Are we targeting only marine fleet superintendents or also other stakeholders
+    like engineers, maintenance teams, etc.?
+  answer: The audience for this ship-spares procurement assistant is primarily marine
+    fleet superintendents.
+  answered_by: auto_inferred
+  rationale: Determining the scope of the audience will help in tailoring the tool's
+    features and user interface appropriately.
+- question: What are the refusal boundaries for emergency credit overrides? Are there
+    specific conditions or criteria under which these overrides should be refused?
+  answer: Emergency credit overrides should not be accepted if they do not comply
+    with the legal, financial, or operational policies of the organization.
+  answered_by: auto_inferred
+  rationale: Understanding the refusal boundaries will ensure that the tool adheres
+    to organizational policies and regulations.
+- question: What are the specific conditions under which compliance certificates should
+    be refused? Are there any exceptions for emergency situations?
+  answer: Compliance certificates should not be accepted if they do not meet the required
+    standards or specifications as outlined in Marine Technical Compliance & Specs
+    (PROC-DOC-02). Exceptions may apply for urgent, unforeseen circumstances.
+  answered_by: auto_inferred
+  rationale: Clarifying refusal boundaries for compliance certificates will ensure
+    that only valid and compliant documents are processed.
+- question: What is the expected behavior of the tool when a legal or weather forecast
+    outside the provided documents is encountered? Should these be strictly refused
+    or handled differently?
+  answer: The tool should refuse any emergency credit overrides, compliance certificates,
+    or port freight lead times that are not within the scope of the provided documents
+    and do not comply with organizational policies.
+  answered_by: auto_inferred
+  rationale: This question ensures that the tool handles unexpected inputs appropriately
+    while adhering to organizational standards.
+- question: What is the expected behavior when a supplier's discount tier exceeds
+    the legal or financial limits set in Supplier SLA & Pricing Terms (PROC-DOC-01)?
+    Should these discounts be refused, and if so, what should happen?
+  answer: Supplier discounts exceeding the legal or financial limits set in Supplier
+    SLA & Pricing Terms (PROC-DOC-01) should be refused. The tool should notify the
+    user of the violation and suggest alternative suppliers.
+  answered_by: auto_inferred
+  rationale: This question ensures that the tool handles supplier discount tiers appropriately,
+    adhering to organizational policies.
+groundability:
+  overall_status: partially_grounded
+  groundability_ratio: 0.875
+  items:
+  - requested_topic: Build a ship-spares procurement assistant for marine fleet superintendents
+      that looks up spare parts from our catalogue CSV, checks supplier
+    status: supported
+    evidence_score: 0.956
+    matching_sources:
+    - Marine_Technical_Compliance_and_Specs.pdf
+    - Supplier_SLA_and_Pricing_Terms.pdf
+    - spares_catalogue.csv
+    matching_snippets:
+    - "[Marine_Technical_Compliance_and_Specs.pdf | score=0.96] Marine Engineering\
+      \ \u2014 Technical Compliance & Material\nCertification (PROC-DOC-02)\nEffective\
+      \ Year: 2026 | Classification Compliance: IACS / DNV / Lloyd's Register\n2.1\
+      \ Mandatory Class Certification for Critical Parts\nEvery "
+    - "[Supplier_SLA_and_Pricing_Terms.pdf | score=0.86] Marine Fleet Procurement\
+      \ \u2014 Supplier SLA & Discount Terms\n(PROC-DOC-01)\nEffective Year: 2026\
+      \ | Approved Vendors: SUP-NORDIC, SUP-SINGAPORE, SUP-ROTTERDAM\n1.1 Volume Discounts\
+      \ & Minimum Order Quantities\nOrders placed with "
+    - "[spares_catalogue.csv | score=0.83] CSV Table: spares_catalogue.csv\nTotal\
+      \ Rows: 12\nColumns (11): part_id, part_name, category, engine_model, supplier_id,\
+      \ unit_price_usd, moq, stock_qty, lead_time_days, weight_kg, criticality\n \
+      \ - part_id: examples=['SP-MV-1"
+    rationale: The evidence includes the spares catalogue, supplier SLA and pricing
+      terms, and port freight lead times which support various aspects of building
+      a ship-spares procurement assistant.
+  - requested_topic: port freight lead times
+    status: supported
+    evidence_score: 1.0
+    matching_sources:
+    - Port_Freight_and_Customs_Schedule.pdf
+    - Supplier_SLA_and_Pricing_Terms.pdf
+    matching_snippets:
+    - "[Port_Freight_and_Customs_Schedule.pdf | score=0.99] Global Marine Logistics\
+      \ \u2014 Port Freight Rates & Customs Lead\nTimes (PROC-DOC-03)\nEffective Year:\
+      \ 2026 | Hub Ports: Singapore, Rotterdam, Fujairah\n3.1 Air & Sea Freight Rate\
+      \ Structure\nAir courier freight is billed at USD 6"
+    - '[Port_Freight_and_Customs_Schedule.pdf | score=0.86] r kg with a minimum charge
+      of USD 95 per shipment.
+
+      3.2 Port Customs Handling Fees & Total Lead Time
+
+      Flat port customs clearance & launch delivery fees are: Singapore USD 140, Rotterdam
+      USD 195, and Fujairah
+
+      USD 210.
+
+      Tota'
+    - '[Port_Freight_and_Customs_Schedule.pdf | score=0.67] ce_usd * qty * (1 - discount))
+      + freight_cost + customs_fee.
+
+      3.3 Restricted & Hazardous Cargo Rules
+
+      Lithium batteries, pressurized nitrogen accumulators, and solvent cleaning chemicals
+      are strictly prohibited on
+
+      standard'
+    rationale: The evidence provides detailed information on port freight rates and
+      customs handling fees, which supports the topic of port freight lead times.
+  - requested_topic: calculates total order landed costs
+    status: supported
+    evidence_score: 0.706
+    matching_sources:
+    - Port_Freight_and_Customs_Schedule.pdf
+    - Supplier_SLA_and_Pricing_Terms.pdf
+    matching_snippets:
+    - '[Port_Freight_and_Customs_Schedule.pdf | score=0.71] r kg with a minimum charge
+      of USD 95 per shipment.
+
+      3.2 Port Customs Handling Fees & Total Lead Time
+
+      Flat port customs clearance & launch delivery fees are: Singapore USD 140, Rotterdam
+      USD 195, and Fujairah
+
+      USD 210.
+
+      Tota'
+    - "[Supplier_SLA_and_Pricing_Terms.pdf | score=0.60] Marine Fleet Procurement\
+      \ \u2014 Supplier SLA & Discount Terms\n(PROC-DOC-01)\nEffective Year: 2026\
+      \ | Approved Vendors: SUP-NORDIC, SUP-SINGAPORE, SUP-ROTTERDAM\n1.1 Volume Discounts\
+      \ & Minimum Order Quantities\nOrders placed with "
+    - "[Port_Freight_and_Customs_Schedule.pdf | score=0.57] Global Marine Logistics\
+      \ \u2014 Port Freight Rates & Customs Lead\nTimes (PROC-DOC-03)\nEffective Year:\
+      \ 2026 | Hub Ports: Singapore, Rotterdam, Fujairah\n3.1 Air & Sea Freight Rate\
+      \ Structure\nAir courier freight is billed at USD 6"
+    rationale: The evidence includes information on port freight rates, customs handling
+      fees, and supplier SLA & discount terms which support the calculation of total
+      order landed costs.
+  - requested_topic: estimated arrival dates, while refusing unapproved emergency
+      credit overrides or legal/weather forecasts outside the docs
+    status: partial
+    evidence_score: 0.664
+    matching_sources:
+    - Supplier_SLA_and_Pricing_Terms.pdf
+    - Port_Freight_and_Customs_Schedule.pdf
+    matching_snippets:
+    - '[Supplier_SLA_and_Pricing_Terms.pdf | score=0.66] ve or wrong-spec items must
+      be reported via an RMA ticket within 21 calendar days of port delivery.
+
+      Emergency Aircraft-On-Ground (AOG) priority dispatch adds a flat handling surcharge
+      of USD 380 per
+
+      purchase order and cu'
+    - "[Supplier_SLA_and_Pricing_Terms.pdf | score=0.56] Marine Fleet Procurement\
+      \ \u2014 Supplier SLA & Discount Terms\n(PROC-DOC-01)\nEffective Year: 2026\
+      \ | Approved Vendors: SUP-NORDIC, SUP-SINGAPORE, SUP-ROTTERDAM\n1.1 Volume Discounts\
+      \ & Minimum Order Quantities\nOrders placed with "
+    - '[Supplier_SLA_and_Pricing_Terms.pdf | score=0.55] r.
+
+      SUP-ROTTERDAM offers fixed contract pricing (0% volume discount) but guarantees
+      48-hour dispatch
+
+      readiness for in-stock STANDARD items.
+
+      All orders must satisfy the Minimum Order Quantity (MOQ) listed in spares_catalog'
+    rationale: The evidence provides information on emergency AOG priority dispatch
+      surcharges but does not include details on estimated arrival dates.
+  unsupported_requests: []
+  warnings:
+  - 'PARTIAL COVERAGE: ''estimated arrival dates, while refusing unapproved emergency
+    credit overrides or legal/weather forecasts outside the docs'' is only partially
+    documented (Supplier_SLA_and_Pricing_Terms.pdf, Port_Freight_and_Customs_Schedule.pdf).'
+human_checkpoint_status: auto_approved
+human_notes: ''
+corpus_summary:
+- filename: Marine_Technical_Compliance_and_Specs.pdf
+  relative_path: Marine_Technical_Compliance_and_Specs.pdf
+  doc_type: pdf
+  sha256: ec4fa22a53e4c28669d2bc969cfaf036911a0a0daaacda14d3a0f0fb3739cb2b
+  num_pages_or_rows: 1
+  num_chunks: 2
+  columns: []
+  key_headings:
+  - 2.1 Mandatory Class Certification for Critical Parts
+  - 2.2 Operating Limits & Material Specifications
+  preview: "Marine Engineering \u2014 Technical Compliance & Material Certification\
+    \ (PROC-DOC-02) Effective Year: 2026 | Classification Compliance: IACS / DNV /\
+    \ Lloyd's Register 2.1 Mandatory Class Certification for Critical Parts Every\
+    \ spare part marked criticality=CRITICAL in spares_catalogue.csv MUST ship with\
+    \ an"
+- filename: Port_Freight_and_Customs_Schedule.pdf
+  relative_path: Port_Freight_and_Customs_Schedule.pdf
+  doc_type: pdf
+  sha256: 7088e0e91f3383a3cc1baceac544521ae664a0a0ed02d72dccddd1baffd4d564
+  num_pages_or_rows: 1
+  num_chunks: 3
+  columns: []
+  key_headings:
+  - 3.1 Air & Sea Freight Rate Structure
+  - 3.2 Port Customs Handling Fees & Total Lead Time
+  - Usd 210.
+  - 3.3 Restricted & Hazardous Cargo Rules
+  preview: "Global Marine Logistics \u2014 Port Freight Rates & Customs Lead Times\
+    \ (PROC-DOC-03) Effective Year: 2026 | Hub Ports: Singapore, Rotterdam, Fujairah\
+    \ 3.1 Air & Sea Freight Rate Structure Air courier freight is billed at USD 6.50\
+    \ per kg (total shipment weight = unit weight_kg * quantity from spares_catalo"
+- filename: spares_catalogue.csv
+  relative_path: spares_catalogue.csv
+  doc_type: csv
+  sha256: 0cef3bad362bb66531983774b625bf897bb66be8b0011048f4cb3ff630cf48cf
+  num_pages_or_rows: 12
+  num_chunks: 8
+  columns:
+  - part_id
+  - part_name
+  - category
+  - engine_model
+  - supplier_id
+  - unit_price_usd
+  - moq
+  - stock_qty
+  - lead_time_days
+  - weight_kg
+  - criticality
+  key_headings:
+  - CSV Schema
+  - 12 data rows
+  preview: 'Columns: part_id, part_name, category, engine_model, supplier_id, unit_price_usd,
+    moq, stock_qty, lead_time_days, weight_kg, criticality. Row 1 -> part_id: SP-MV-101
+    | part_name: Main Seawater Cooling Pump Impeller | category: Pumps | engine_model:
+    MAN-6S50MC | supplier_id: SUP-NORDIC | unit_price_u'
+- filename: Supplier_SLA_and_Pricing_Terms.pdf
+  relative_path: Supplier_SLA_and_Pricing_Terms.pdf
+  doc_type: pdf
+  sha256: 23bd72b685b9753642906c1c0eab2a3d76077568c051754a140c3abc5a53c5cf
+  num_pages_or_rows: 1
+  num_chunks: 3
+  columns: []
+  key_headings:
+  - (Proc-Doc-01)
+  - 1.1 Volume Discounts & Minimum Order Quantities
+  - 1.2 Warranty, RMA & Expedited AOG Surcharge
+  - 1.3 Payment Terms & Credit Limits
+  preview: "Marine Fleet Procurement \u2014 Supplier SLA & Discount Terms (PROC-DOC-01)\
+    \ Effective Year: 2026 | Approved Vendors: SUP-NORDIC, SUP-SINGAPORE, SUP-ROTTERDAM\
+    \ 1.1 Volume Discounts & Minimum Order Quantities Orders placed with SUP-NORDIC\
+    \ receive a 5% unit price discount when total quantity on a single part"

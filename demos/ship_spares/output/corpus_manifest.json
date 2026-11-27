@@ -1,0 +1,26 @@
+{
+  "Marine_Technical_Compliance_and_Specs.pdf": {
+    "filename": "Marine_Technical_Compliance_and_Specs.pdf",
+    "sha256": "ec4fa22a53e4c28669d2bc969cfaf036911a0a0daaacda14d3a0f0fb3739cb2b",
+    "size_bytes": 2517,
+    "doc_type": "pdf"
+  },
+  "Port_Freight_and_Customs_Schedule.pdf": {
+    "filename": "Port_Freight_and_Customs_Schedule.pdf",
+    "sha256": "7088e0e91f3383a3cc1baceac544521ae664a0a0ed02d72dccddd1baffd4d564",
+    "size_bytes": 2587,
+    "doc_type": "pdf"
+  },
+  "spares_catalogue.csv": {
+    "filename": "spares_catalogue.csv",
+    "sha256": "0cef3bad362bb66531983774b625bf897bb66be8b0011048f4cb3ff630cf48cf",
+    "size_bytes": 1365,
+    "doc_type": "csv"
+  },
+  "Supplier_SLA_and_Pricing_Terms.pdf": {
+    "filename": "Supplier_SLA_and_Pricing_Terms.pdf",
+    "sha256": "23bd72b685b9753642906c1c0eab2a3d76077568c051754a140c3abc5a53c5cf",
+    "size_bytes": 2823,
+    "doc_type": "pdf"
+  }
+}
