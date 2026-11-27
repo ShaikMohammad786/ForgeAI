@@ -1,0 +1,13 @@
+part_id,part_name,category,engine_model,supplier_id,unit_price_usd,moq,stock_qty,lead_time_days,weight_kg,criticality
+SP-MV-101,Main Seawater Cooling Pump Impeller,Pumps,MAN-6S50MC,SUP-NORDIC,640,2,14,5,8.5,CRITICAL
+SP-MV-104,Bronze Butterfly Sea Chest Valve DN150,Valves,AUX-ALL,SUP-ROTTERDAM,920,1,6,7,22.0,CRITICAL
+SP-VL-204,High-Pressure Fuel Injection Valve,Fuel System,MAN-6S50MC,SUP-NORDIC,1180,4,20,4,4.2,CRITICAL
+SP-VL-209,Starting Air Non-Return Valve,Valves,WARTSILA-6L46,SUP-SINGAPORE,490,2,11,6,6.0,STANDARD
+SP-GS-309,Turbocharger Rotor Bearing Kit,Turbocharger,ABB-TPL77,SUP-SINGAPORE,3450,1,3,9,14.0,CRITICAL
+SP-GS-312,Cylinder Head Gasket Set (6-Pack),Seals,MAN-6S50MC,SUP-NORDIC,420,2,28,3,5.5,STANDARD
+SP-EL-402,Viton O-Ring Seal Kit High-Temp,Seals,WARTSILA-6L46,SUP-ROTTERDAM,165,5,45,2,1.2,STANDARD
+SP-EL-415,Main Switchboard AVR Voltage Regulator,Electrical,HYUNDAI-HIMSEN,SUP-SINGAPORE,2250,1,4,8,3.8,CRITICAL
+SP-PM-501,Lube Oil Purifier Bowl Disc Stack,Separators,ALFA-S835,SUP-NORDIC,2890,1,2,12,19.5,CRITICAL
+SP-PM-508,Bilge Oily Water Separator Filter Element,Filters,AUX-ALL,SUP-ROTTERDAM,210,6,36,3,3.0,STANDARD
+SP-EX-603,Exhaust Manifold Expansion Bellows,Exhaust,WARTSILA-6L46,SUP-ROTTERDAM,1340,1,5,10,16.5,STANDARD
+SP-COOL-702,Plate Heat Exchanger Titanium Plate,Cooling,ALFA-M15,SUP-SINGAPORE,310,10,60,5,2.4,STANDARD

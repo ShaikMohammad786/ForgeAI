@@ -282,6 +282,37 @@ def regress(
 
 
 @app.command()
+def baseline(
+    human_yaml: Path = typer.Option(..., "--human", exists=True, help="Hand-written baseline YAML."),
+    forge_dir: Path = typer.Option(..., "--forge", exists=True, help="ForgeAI generated output folder."),
+    out_md: Path = typer.Option(..., "--out", help="Output markdown comparison report path."),
+    provider: Optional[str] = typer.Option(None, "--provider", "-p"),
+    model: Optional[str] = typer.Option(None, "--model", "-m"),
+    judge_model: Optional[str] = typer.Option(None, "--judge-model"),
+) -> None:
+    """Bonus 4: Compare hand-written human baseline against ForgeAI generated agent."""
+    import sys as _sys
+
+    root_dir = Path(__file__).resolve().parents[3]
+    if str(root_dir) not in _sys.path:
+        _sys.path.insert(0, str(root_dir))
+    from baselines.compare_baseline import compare_factory_vs_human
+
+    summary = compare_factory_vs_human(
+        human_yaml=human_yaml,
+        forge_dir=forge_dir,
+        out_md=out_md,
+        provider=provider,
+        model_name=model,
+        judge_model_name=judge_model,
+    )
+    console.print(
+        f"Human pass_rate={summary['human']['pass_rate']:.3f} vs "
+        f"ForgeAI pass_rate={summary['forgeai']['pass_rate']:.3f}. Saved: {out_md}"
+    )
+
+
+@app.command()
 def ui(
     port: int = typer.Option(8501, "--port", help="Streamlit server port."),
 ) -> None:

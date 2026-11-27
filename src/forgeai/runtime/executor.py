@@ -84,6 +84,13 @@ class AgentRuntime:
             )
 
         agent = AgentDefinition.model_validate(data)
+        resolved_docs = docs_dir_override
+        if resolved_docs is None:
+            cand_raw = Path(agent.docs_dir)
+            if not cand_raw.exists():
+                sibling_docs = (root.parent if root.is_dir() else root.parent.parent) / "docs"
+                if sibling_docs.exists():
+                    resolved_docs = sibling_docs
         chosen_provider = provider or agent.provider
         if chosen_provider.startswith("gemini"):
             chosen_provider = "gemini"
@@ -97,7 +104,7 @@ class AgentRuntime:
         return cls(
             agent,
             llm,
-            docs_dir_override=docs_dir_override,
+            docs_dir_override=resolved_docs,
             embed_model_name=cfg.embed_model,
         )
 
