@@ -7,15 +7,15 @@
 ### Core Architecture (All 9 Mandatory Requirements)
 - **Intake Interviewer**: Reads brief + corpus inventory, asks <=5 clarifying questions (interactive CLI/UI or `--unattended`), outputs structured `requirements.yaml`.
 - **Groundability Guard**: Verifies requested scope against indexed corpus evidence; moves unsupported asks into `must_refuse` so the generated agent will not hallucinate missing coverage.
-- **Declarative Agent Generator**: Emits `agent_definition.yaml/.json` with prompt, chunking/hybrid-retrieval config, strictly pruned tool selection (`csv_lookup`, `calculator`, `open_meteo_weather`, `current_date`), and JSON output contract.
+- **Declarative Agent Generator**: Emits `agent_definition.yaml/.json` with prompt, chunking/hybrid-retrieval config, strictly pruned tool selection from a 7-tool sandboxed registry (`csv_lookup`, `json_record_lookup`, `calculator`, `unit_converter`, `currency_converter`, `open_meteo_weather`, `current_date`), and JSON output contract.
 - **Document-Grounded Eval Generator**: Auto-generates >=20 verified test cases (answerable, out-of-scope refusals, multi-doc/ambiguous/tool edge cases) using committed Jinja2 prompt templates (`src/forgeai/prompts/`).
 - **Debiased Hybrid Judge**: Combines deterministic contract/citation/numeric/refusal gates with atomic NLI fact verification, cross-model option, position-swapped tournament checks, and verbosity penalties.
 - **Targeted Critic–Optimizer**: Classifies failures (`retrieval_miss`, `prompt_defect`, `hallucination`, `wrong_refusal`), applies minimal diff patches (<=3 iterations) with rollback protection, and logs every before/after change.
 - **Honest Quality Reporting**: Generates `scorecard.md`, `iteration_log.md`, and `report.md` detailing exact passing rates and *what still fails and why*.
 - **Generic Runnable Agent**: CLI (`forgeai chat`) and Streamlit UI capable of loading any produced `agent_definition` folder with live tool execution and citations.
-- **Two Committed End-to-End Demos**:
-  1. `demos/hr_policy/` — HR Policy Assistant over 3 HR policy PDFs (with Factory vs Human Baseline comparison).
-  2. `demos/ship_spares/` — Ship-Spares Procurement Assistant over `spares_catalogue.csv` + 3 supplier/spec/freight PDFs.
+- **Two Committed End-to-End Demos** (run locally on `qwen2.5:3b` generator/agent + `qwen2.5:1.5b` cross-judge):
+  1. `demos/hr_policy/` — **HR Policy Assistant** over 3 multi-page HR PDFs: improved from `70.4% (19/27)` -> **`74.1% (20/27)`** (`calculator` attached; `csv_lookup` & `open_meteo_weather` pruned), beating the hand-written Human Baseline (`70.4%`, `+3.7pp` in [baseline_comparison.md](demos/hr_policy/output/baseline_comparison.md)). See [HR Report](demos/hr_policy/output/report.md).
+  2. `demos/ship_spares/` — **Ship-Spares Procurement Assistant** over `spares_catalogue.csv` + 3 supplier/spec/freight PDFs: improved from `58.3% (14/24)` -> **`62.5% (15/24)`** (`csv_lookup` & `calculator` attached; `open_meteo_weather` pruned). See [Ship-Spares Report](demos/ship_spares/output/report.md).
 
 ### Bonus Capabilities Included
 1. **Prompt Tournament**: Competes 3 candidate prompt strategies using debiased evaluation before optimization.

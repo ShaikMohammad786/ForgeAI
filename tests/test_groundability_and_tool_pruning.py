@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from forgeai.factory.eval_gen import _is_false_out_of_scope, _is_near_duplicate_question
 from forgeai.factory.groundability import audit_groundability
 from forgeai.factory.intake import run_intake_interview
-from forgeai.ingestion import load_corpus
+from forgeai.ingestion import chunk_corpus, load_corpus
 from forgeai.llm.base import LLMProvider, LLMResponse
+from forgeai.retrieval import HybridRetriever
 from forgeai.tools.registry import evaluate_tool_eligibility
 
 
@@ -64,3 +66,23 @@ def test_groundability_guard_blocks_ungroundable_brief_and_flags_partial_gaps(tm
     )
     assert any("cryptocurrency" in t.lower() or "stock" in t.lower() for t in req.must_refuse_topics)
     assert not any("cryptocurrency" in t.lower() for t in req.must_answer_topics)
+
+
+def test_eval_gen_purity_and_dedup_filters(tmp_path: Path) -> None:
+    (tmp_path / "policy.txt").write_text(
+        "Shore staff receive 24 days paid annual leave and 12 paid sick leave days. "
+        "Business travel meal reimbursement is capped at USD 55 per day.",
+        encoding="utf-8",
+    )
+    corpus = load_corpus(tmp_path)
+    ret = HybridRetriever(chunk_corpus(corpus), use_dense=False)
+
+    # Answerable corpus query mistakenly labeled out-of-scope must be rejected!
+    assert _is_false_out_of_scope("What is the business travel meal reimbursement cap?", ret) is True
+    # True out-of-scope / legal / stock query must be preserved!
+    assert _is_false_out_of_scope("What is the company stock option vesting schedule?", ret) is False
+    assert _is_false_out_of_scope("Give me legal advice on maritime arbitration.", ret) is False
+
+    # Near-duplicate paraphrase detection
+    seen = {"what is the maximum annual leave carry forward allowed?"}
+    assert _is_near_duplicate_question("What is the maximum annual leave carry forward allowed into next year?", seen) is True
