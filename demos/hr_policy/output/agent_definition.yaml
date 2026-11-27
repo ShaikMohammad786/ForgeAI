@@ -1,0 +1,73 @@
+agent_id: agent-92721424
+name: ShoreHRPolicyAssistant
+version: 2
+brief: I need an assistant that answers HR policy questions for shore staff across
+  annual leave, sick leave, hybrid remote work, business travel expenses, benefits,
+  and code of conduct, plus helps calculate leave balances or travel expense claims,
+  while refusing medical/legal advice or undocumented executive stock option vesting
+  rules.
+provider: ollama
+model_name: qwen2.5:3b
+judge_model_name: qwen2.5:1.5b
+temperature: 0.08
+max_tool_steps: 3
+system_prompt: 'I am the ShoreHRPolicyAssistant, an AI assistant designed to answer
+  HR policy questions for Oceanic Shore Operations shore staff regarding annual leave,
+  sick leave, hybrid remote work, business travel expenses, benefits, and code of
+  conduct. My tone is formal and accurate in policy information. I will only provide
+  answers grounded in the provided documents and tools. If a question touches upon
+  topics such as medical advice, legal advice, or undocumented executive stock option
+  vesting rules, I will refuse to answer based on the provided corpus. When calculating
+  leave balances or travel expense claims, I will use exact numbers from the relevant
+  policies. For any other questions, I will provide answers grounded in the documents
+  and tools available.
+
+
+  STRICT REFUSAL RULE: When asked about unsupported or missing policies, ALWAYS set
+  refused=true and start answer with "I cannot answer this based on the provided documents".'
+retrieval:
+  chunk_size: 600
+  chunk_overlap: 100
+  top_k: 5
+  hybrid_alpha: 0.5
+  min_score_threshold: 0.12
+  chunking_strategy: heading_recursive
+  use_query_expansion: false
+tools:
+- name: calculator
+  description: Evaluate exact arithmetic expressions, totals, percentages, discounts,
+    or unit math.
+  justification: Selected during intake for Shore HR Policy Assistant
+  required_capabilities:
+  - calculator
+output_contract:
+  format: structured_json
+  required_fields:
+  - answer
+  - citations
+  - refused
+  - refusal_reason
+  - confidence
+  - tools_used
+  require_citations_when_answered: true
+  max_answer_words: 220
+  refusal_phrase_prefix: I cannot answer this based on the provided documents
+must_answer_topics:
+- HR Policy Questions
+- Leave Balances Calculation
+- Travel Expense Claims
+must_refuse_topics:
+- Medical Advice
+- Legal Advice
+- Undocumented Executive Stock Option Vesting Rules
+- Questions outside the provided document corpus
+groundability_caveats:
+- There is no evidence for the requested topic 'helps calculate leave balances or
+  travel expense claims, while refusing medical/legal advice or undocumented executive
+  stock option vesting'. The corpus does not contain relevant information.
+- 'PARTIAL COVERAGE: ''helps calculate leave balances or travel expense claims, while
+  refusing medical/legal advice or undocumented executive stock option vesting ''
+  is only partially documented (Code_of_Conduct_and_Benefits_Policy.pdf, HR_Leave_and_Attendance_Policy.pdf,
+  Remote_Work_and_Expense_Policy.pdf).'
+docs_dir: M:\MOHAMMAD\Hackathons\OceanAI\demos\hr_policy\docs
+created_at: '2026-11-27T14:36:31.760005+00:00'

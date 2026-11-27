@@ -1,0 +1,442 @@
+{
+  "generated_at": "2026-11-27T14:37:59.770716+00:00",
+  "generator_model": "qwen2.5:3b",
+  "total_cases": 27,
+  "cases": [
+    {
+      "case_id": "eval_01",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What is the maximum number of unused annual leave days that can be carried forward into the next calendar year?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Remote_Work_and_Expense_Policy.pdf"
+      ],
+      "key_facts": [
+        "Employees may carry forward a maximum of 5 unused annual leave days into the next calendar year.",
+        "Any carried-forward days not used by March 31 are forfeited without cash payout."
+      ],
+      "expected_tools": [],
+      "rationale": "This tests the ability to synthesize information from multiple documents and understand complex rules about leave accrual and carryover.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_02",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What is the total amount of paid annual leave that full-time permanent shore staff accrue per calendar year?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Remote_Work_and_Expense_Policy.pdf"
+      ],
+      "key_facts": [
+        "Full-time permanent shore staff accrue 24 working days of paid annual leave per calendar year (2.0 days per completed month of service).",
+        "Employees may carry forward a maximum of 5 unused annual leave days into the next calendar year."
+      ],
+      "expected_tools": [],
+      "rationale": "This tests the ability to combine information from multiple documents and understand complex leave accrual rules.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_03",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What is the maximum number of unused annual leave days that can be carried forward into the next calendar year, considering they are not used by March 31?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Remote_Work_and_Expense_Policy.pdf"
+      ],
+      "key_facts": [
+        "Employees may carry forward a maximum of 5 unused annual leave days into the next calendar year.",
+        "Any carried-forward days not used by March 31 are forfeited without cash payout."
+      ],
+      "expected_tools": [],
+      "rationale": "This tests the ability to understand and apply conditional rules about leave accrual and carryover.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_04",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What is the total number of days of paid sick leave that shore employees receive per calendar year?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Remote_Work_and_Expense_Policy.pdf"
+      ],
+      "key_facts": [
+        "Shore employees receive 12 days of paid sick leave per calendar year without carryover.",
+        "Employees may carry forward a maximum of 5 unused annual leave days into the next calendar year."
+      ],
+      "expected_tools": [],
+      "rationale": "This tests the ability to combine information from multiple documents and understand complex leave entitlements.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_05",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What is the maximum number of unused annual leave days that can be carried forward into the next calendar year, considering they are not used by March 31 and any remaining days are forfeited?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Remote_Work_and_Expense_Policy.pdf"
+      ],
+      "key_facts": [
+        "Employees may carry forward a maximum of 5 unused annual leave days into the next calendar year.",
+        "Any carried-forward days not used by March 31 are forfeited without cash payout."
+      ],
+      "expected_tools": [],
+      "rationale": "This tests the ability to understand and apply conditional rules about leave accrual and carryover, including forfeiture of unused days.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_06",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What is the total amount of paid annual leave that full-time permanent shore staff accrue per calendar year, considering they may only take paid annual leave after completing 60 calendar days during the initial 90-day probationary period?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "HR_Leave_and_Attendance_Policy.pdf"
+      ],
+      "key_facts": [
+        "Full-time permanent shore staff accrue 24 working days of paid annual leave per calendar year (2.0 days per completed month of service).",
+        "Employees may only take paid annual leave after completing 60 calendar days during the initial 90-day probationary period."
+      ],
+      "expected_tools": [],
+      "rationale": "This tests the ability to combine information from multiple documents and understand complex rules about leave accrual, including the impact of a probationary period on when leave can be taken.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_07",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What are the conditions for taking sick leave and parental/compassionate leave?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "HR_Leave_and_Attendance_Policy.pdf"
+      ],
+      "key_facts": [
+        "For absences of 1 to 3 days, self-certification in the HR portal before 10:00 local time on the first day is sufficient.",
+        "Primary caregivers are entitled to 16 weeks of fully paid parental leave after 6 months of continuous shore employment."
+      ],
+      "expected_tools": [],
+      "rationale": "This question synthesizes information from multiple documents and requires understanding of different types of leave conditions.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_08",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What are the core working hours for shore staff, and how many compensatory days can be earned for weekend travel?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Remote_Work_and_Expense_Policy.pdf"
+      ],
+      "key_facts": [
+        "Standard shore office hours are 09:00 to 17:30 Monday through Friday with mandatory core collaboration hours from 10:00 to 15:30.",
+        "When shore staff perform mandatory weekend business travel under Remote_Work_and_Expense_Policy.pdf, one compensatory day off is granted for each full weekend day travelled."
+      ],
+      "expected_tools": [],
+      "rationale": "This question requires synthesizing information from multiple documents to answer about working hours and compensation for weekend travel.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_09",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What are the eligibility criteria for hybrid remote work, including home office equipment stipend?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Remote_Work_and_Expense_Policy.pdf"
+      ],
+      "key_facts": [
+        "Permanent shore employees who have passed the 90-day probation period may work remotely up to 2 days per week with line manager approval.",
+        "Eligible hybrid shore staff may claim a one-time home-office ergonomic equipment stipend of up to USD 450 once every 24 months (chair, external monitor, desk lamp, or headset)."
+      ],
+      "expected_tools": [],
+      "rationale": "This question requires synthesizing information from the provided document to answer about eligibility criteria and stipend details.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_10",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What are the meal, lodging, and mileage reimbursement limits for business travel?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Remote_Work_and_Expense_Policy.pdf"
+      ],
+      "key_facts": [
+        "Business travel meal reimbursement is capped at USD 55 per day for domestic travel and USD 75 per day for international travel.",
+        "Standard hotel accommodation is capped at USD 220 per night excluding taxes unless written CFO exception is obtained for peak port conferences."
+      ],
+      "expected_tools": [],
+      "rationale": "This question requires synthesizing information from the provided document to answer about reimbursement limits and exceptions.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_11",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What are the conditions for submitting expense claims, including non-reimbursable items?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Remote_Work_and_Expense_Policy.pdf"
+      ],
+      "key_facts": [
+        "All expense claims with itemized receipts must be submitted within 14 calendar days after trip completion.",
+        "Strictly non-reimbursable items include alcohol, hotel mini-bar charges, in-room movies, traffic fines, personal laundry on trips under 4 nights, and business/first-class flight upgrades without VP approval."
+      ],
+      "expected_tools": [],
+      "rationale": "This question requires synthesizing information from the provided document to answer about submission conditions and non-reimbursable items.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_12",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What are the parental leave entitlements for shore staff, including duration?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf"
+      ],
+      "key_facts": [
+        "Primary caregivers are entitled to 16 weeks of fully paid parental leave after 6 months of continuous shore employment.",
+        "Secondary caregivers receive 4 weeks of paid leave."
+      ],
+      "expected_tools": [],
+      "rationale": "This question requires synthesizing information from the provided document to answer about parental leave entitlements and duration for different types of caregivers.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_13",
+      "category": "edge_case",
+      "sub_type": "single_doc",
+      "question": "What is the minimum number of completed calendar days required for new hires to accrue paid annual leave?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "HR_Leave_and_Attendance_Policy.pdf"
+      ],
+      "key_facts": [
+        "During the initial 90-day probationary period, new hires accrue leave but may only take paid annual leave after completing 60 calendar days unless pre-approved in writing by HR."
+      ],
+      "expected_tools": [],
+      "rationale": "This tests whether the agent can identify and extract a specific rule from a single document about leave accrual for new hires.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_14",
+      "category": "edge_case",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What is the total annual paid leave entitlement for full-time permanent shore staff, including both base entitlement and carry-forward days?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Remote_Work_and_Expense_Policy.pdf"
+      ],
+      "key_facts": [
+        "Full-time permanent shore staff accrue 24 working days of paid annual leave per calendar year (2.0 days per completed month of service).",
+        "Employees may carry forward a maximum of 5 unused annual leave days into the next calendar year."
+      ],
+      "expected_tools": [],
+      "rationale": "This tests whether the agent can combine information from two different documents to answer a multi-fact question about total annual leave entitlement.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_15",
+      "category": "edge_case",
+      "sub_type": "ambiguous_phrasing",
+      "question": "What is the consequence for retaliation against good-faith whistleblowers?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Code_of_Conduct_and_Benefits_Policy.pdf"
+      ],
+      "key_facts": [
+        "Retaliation against good-faith whistleblowers is grounds for immediate summary dismissal."
+      ],
+      "expected_tools": [],
+      "rationale": "This tests whether the agent can identify and understand an ambiguous phrasing in a single document to provide a clear answer about consequences of retaliation.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_16",
+      "category": "edge_case",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What is the total amount of paid sick leave for full-time shore staff per calendar year, including any carry-forward days?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Remote_Work_and_Expense_Policy.pdf"
+      ],
+      "key_facts": [
+        "Shore employees receive 12 days of paid sick leave per calendar year without carryover.",
+        "Employees may carry forward a maximum of 5 unused annual leave days into the next calendar year."
+      ],
+      "expected_tools": [],
+      "rationale": "This tests whether the agent can combine information from two different documents to answer a multi-fact question about total paid sick leave entitlement, including carry-forward days.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_17",
+      "category": "edge_case",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What is the maximum number of unused annual leave days that can be carried forward into the next calendar year for full-time shore staff?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Remote_Work_and_Expense_Policy.pdf"
+      ],
+      "key_facts": [
+        "Employees may carry forward a maximum of 5 unused annual leave days into the next calendar year."
+      ],
+      "expected_tools": [],
+      "rationale": "This tests whether the agent can identify and understand an exact rule from one document about carrying-forward unused annual leave days for full-time shore staff.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_18",
+      "category": "edge_case",
+      "sub_type": "tool_calculation",
+      "question": "How many working days of paid annual leave does a full-time permanent shore staff member accrue per calendar year?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "HR_Leave_and_Attendance_Policy.pdf"
+      ],
+      "key_facts": [
+        "Full-time permanent shore staff accrue 24 working days of paid annual leave per calendar year (2.0 days per completed month of service)."
+      ],
+      "expected_tools": [],
+      "rationale": "This tests whether the agent can calculate and understand a numeric value from one document about full-time permanent shore staff's annual leave entitlement.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_19",
+      "category": "edge_case",
+      "sub_type": "tool_calculation",
+      "question": "How many working days of paid sick leave does a full-time shore staff member receive per calendar year?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Remote_Work_and_Expense_Policy.pdf"
+      ],
+      "key_facts": [
+        "Shore employees receive 12 days of paid sick leave per calendar year without carryover."
+      ],
+      "expected_tools": [],
+      "rationale": "This tests whether the agent can calculate and understand a numeric value from one document about full-time shore staff's annual sick leave entitlement.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_20",
+      "category": "out_of_scope",
+      "sub_type": "near_domain_out_of_scope",
+      "question": "Can you provide a legal opinion on whether our company's new remote work policy complies with all applicable labor laws?",
+      "expected_behavior": "refuse",
+      "source_documents": [],
+      "key_facts": [],
+      "expected_tools": [],
+      "rationale": "The assistant is designed to not provide medical or legal advice, and the provided corpus does not contain information about compliance with labor laws.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_21",
+      "category": "out_of_scope",
+      "sub_type": "near_domain_out_of_scope",
+      "question": "How do I calculate my annual leave entitlement based on my years of service?",
+      "expected_behavior": "refuse",
+      "source_documents": [],
+      "key_facts": [],
+      "expected_tools": [],
+      "rationale": "The provided corpus does not contain specific information about calculating annual leave entitlements.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_22",
+      "category": "out_of_scope",
+      "sub_type": "near_domain_out_of_scope",
+      "question": "What are the potential legal consequences if I violate our code of conduct?",
+      "expected_behavior": "refuse",
+      "source_documents": [],
+      "key_facts": [],
+      "expected_tools": [],
+      "rationale": "The assistant is designed to not provide medical or legal advice, and the provided corpus does not contain information about legal consequences for violating a code of conduct.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_23",
+      "category": "out_of_scope",
+      "sub_type": "near_domain_out_of_scope",
+      "question": "Can you help me understand if I can use my vacation days to cover for an unexpected business trip?",
+      "expected_behavior": "refuse",
+      "source_documents": [],
+      "key_facts": [],
+      "expected_tools": [],
+      "rationale": "The assistant is designed to not provide medical or legal advice, and the provided corpus does not contain information about using vacation days for unexpected business trips.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_24",
+      "category": "out_of_scope",
+      "sub_type": "near_domain_out_of_scope",
+      "question": "How do I handle a situation where an employee is suspected of embezzlement?",
+      "expected_behavior": "refuse",
+      "source_documents": [],
+      "key_facts": [],
+      "expected_tools": [],
+      "rationale": "The assistant is designed to not provide medical or legal advice, and the provided corpus does not contain information about handling suspected embezzlement.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_25",
+      "category": "out_of_scope",
+      "sub_type": "near_domain_out_of_scope",
+      "question": "What are the specific requirements for submitting business travel expense reports?",
+      "expected_behavior": "refuse",
+      "source_documents": [],
+      "key_facts": [],
+      "expected_tools": [],
+      "rationale": "The provided corpus does not contain specific information about submission requirements for business travel expenses.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_26",
+      "category": "out_of_scope",
+      "sub_type": "near_domain_out_of_scope",
+      "question": "Can you explain the difference between sick leave and annual leave in our company policy?",
+      "expected_behavior": "refuse",
+      "source_documents": [],
+      "key_facts": [],
+      "expected_tools": [],
+      "rationale": "The assistant is designed to not provide medical or legal advice, and the provided corpus does not contain specific information about distinguishing between sick leave and annual leave.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_27",
+      "category": "out_of_scope",
+      "sub_type": "near_domain_out_of_scope",
+      "question": "How do I handle a situation where an employee is found to have used their vacation days for personal use?",
+      "expected_behavior": "refuse",
+      "source_documents": [],
+      "key_facts": [],
+      "expected_tools": [],
+      "rationale": "The assistant is designed to not provide medical or legal advice, and the provided corpus does not contain specific information about handling such situations.",
+      "verified_in_corpus": true
+    }
+  ]
+}
