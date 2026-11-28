@@ -878,48 +878,8 @@ def _render_regression_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
     sel_label = st.selectbox("Baseline Agent Bundle", options=list(bundles.keys()), key="reg_bundle_select")
     sel_dir = bundles[sel_label]
 
-    # Display current baseline documents & hashes so users see what exists before uploading v2 docs
-    manifest_path = sel_dir / "corpus_manifest.json"
-    agent_yaml_path = sel_dir / "agent_definition.yaml"
-    baseline_docs_dir: Path | None = None
-    if agent_yaml_path.exists():
-        raw_agent = yaml.safe_load(agent_yaml_path.read_text(encoding="utf-8")) or {}
-        cand_dir = Path(str(raw_agent.get("docs_dir", "")))
-        if cand_dir.exists() and cand_dir.is_dir():
-            baseline_docs_dir = cand_dir
-        elif (sel_dir.parent / "docs").exists():
-            baseline_docs_dir = sel_dir.parent / "docs"
-
-    manifest_data = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else {}
-    if manifest_data:
-        doc_rows = [
-            {
-                "Filename": meta.get("filename", fname),
-                "Format": str(meta.get("doc_type", "")).upper(),
-                "Size (Bytes)": meta.get("size_bytes", "-"),
-                "SHA-256 (prefix)": str(meta.get("sha256", ""))[:12],
-            }
-            for fname, meta in manifest_data.items()
-        ]
-        st.markdown("#### Current Baseline Documents")
-        st.dataframe(pd.DataFrame(doc_rows), use_container_width=True, hide_index=True)
-
-    if baseline_docs_dir and baseline_docs_dir.exists():
-        available_files = sorted(p for p in baseline_docs_dir.iterdir() if p.is_file())
-        if available_files:
-            with st.expander("Download Baseline Files (optional — edit and re-upload below to test diffing)", expanded=False):
-                dcols = st.columns(min(len(available_files), 4))
-                for idx, fpath in enumerate(available_files):
-                    dcols[idx % len(dcols)].download_button(
-                        label=fpath.name,
-                        data=fpath.read_bytes(),
-                        file_name=fpath.name,
-                        key=f"reg_dl_{sel_dir}_{fpath.name}",
-                        use_container_width=True,
-                    )
-
     reg_uploads = st.file_uploader(
-        "Upload Updated Documents (re-upload edited versions or a subset to simulate modified/removed files)",
+        "Upload Updated Documents",
         type=UPLOAD_TYPES,
         accept_multiple_files=True,
         key="reg_uploader",
@@ -969,8 +929,76 @@ def _render_regression_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
             data=rep_md,
             file_name="regression_report.md",
             mime="text/markdown",
+            key="reg_live_dl",
         )
         st.markdown(rep_md)
+
+    # Display saved demo regression audit report & explanation when available
+    saved_reg_json = sel_dir / "regression_demo" / "regression_report.json"
+    saved_reg_md = sel_dir / "regression_demo" / "regression_report.md"
+    if saved_reg_json.exists() and saved_reg_md.exists():
+        st.markdown("---")
+        st.markdown("#### Saved Demo Regression Audit (Why & What Broke)")
+        reg_data = json.loads(saved_reg_json.read_text(encoding="utf-8"))
+        delta_saved = round((reg_data["new_pass_rate"] - reg_data["old_pass_rate"]) * 100, 1)
+        k1, k2, k3, k4 = st.columns(4)
+        k1.metric(
+            "Docs Changed",
+            f"+{len(reg_data.get('added_files', []))} / ~{len(reg_data.get('modified_files', []))} / -{len(reg_data.get('removed_files', []))}",
+            f"{reg_data.get('old_docs_count', '-')} -> {reg_data.get('new_docs_count', '-')} files",
+        )
+        k2.metric(
+            "Pass Rate Impact",
+            f"{delta_saved:+.1f} pp",
+            f"{round(reg_data['old_pass_rate'] * 100, 1)}% -> {round(reg_data['new_pass_rate'] * 100, 1)}%",
+        )
+        k3.metric("Newly Broken Cases", len(reg_data.get("newly_broken", [])))
+        k4.metric("Now Ungroundable", len(reg_data.get("now_ungroundable", [])))
+
+        mod_list = ", ".join(f"`{f}`" for f in reg_data.get("modified_files", [])) or "none"
+        st.info(
+            f"**Why this result occurred:** Modified {mod_list} in the v2 test snapshot "
+            "(reducing annual leave `24 -> 20` days & carryover `5 -> 3`, discontinuing the `$450` equipment stipend, "
+            "and removing parental leave, office hours, and mileage rules). "
+            "Re-running the original v1 baseline eval suite against those updated PDFs cleanly surfaced the invalidated "
+            "numbers and deleted rules—showing exactly what broke and which old evals are now ungroundable."
+        )
+
+        broken = reg_data.get("newly_broken", [])
+        if broken:
+            with st.expander(f"Newly Broken Cases ({len(broken)})", expanded=True):
+                b_rows = [
+                    {
+                        "Case": b.get("case_id"),
+                        "Failure Type": b.get("failure_category"),
+                        "Reason": b.get("failure_reason"),
+                        "Question": b.get("question"),
+                    }
+                    for b in broken
+                ]
+                st.dataframe(pd.DataFrame(b_rows), use_container_width=True, hide_index=True)
+
+        unground = reg_data.get("now_ungroundable", [])
+        if unground:
+            with st.expander(f"Now Ungroundable After Document Changes ({len(unground)})", expanded=False):
+                u_rows = [
+                    {
+                        "Case": u.get("case_id"),
+                        "Old Sources": ", ".join(u.get("old_sources") or []),
+                        "Reason": u.get("reason"),
+                        "Question": u.get("question"),
+                    }
+                    for u in unground
+                ]
+                st.dataframe(pd.DataFrame(u_rows), use_container_width=True, hide_index=True)
+
+        st.download_button(
+            "Download Saved Regression Report MD",
+            data=saved_reg_md.read_text(encoding="utf-8"),
+            file_name="regression_report.md",
+            mime="text/markdown",
+            key="reg_saved_dl",
+        )
 
 
 def _render_reports_tab() -> None:
