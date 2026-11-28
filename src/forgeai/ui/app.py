@@ -130,8 +130,25 @@ def _trace_to_chat_meta(trace: Any) -> dict[str, Any]:
     }
 
 
-def _render_bundle_results(out_dir: Path) -> None:
-    """Render scorecard KPIs, tools & custom macros, charts, and downloads for a finished build."""
+def _extract_honest_summary(report_md: str) -> str:
+    """Extract concise Honest Assessment paragraph from report.md."""
+    lines = report_md.splitlines()
+    capture = False
+    collected: list[str] = []
+    for ln in lines:
+        if ln.strip().startswith("## Honest Assessment"):
+            capture = True
+            continue
+        if capture:
+            if ln.strip().startswith("## "):
+                break
+            if ln.strip():
+                collected.append(ln.strip())
+    return " ".join(collected)
+
+
+def _render_bundle_results(out_dir: Path, *, context: str = "tab1") -> None:
+    """Render concise executive scorecard KPIs, tools & macros, reasoning, and downloads."""
     files = _load_bundle_summary_files(out_dir)
     if "report.md" not in files:
         st.warning("No final report found in this bundle.")
@@ -141,60 +158,160 @@ def _render_bundle_results(out_dir: Path) -> None:
     scorecards = json.loads(files["scorecard.json"]) if "scorecard.json" in files else []
     iterations = json.loads(files["iteration_log.json"]) if "iteration_log.json" in files else []
     req_data = yaml.safe_load(files["requirements.yaml"]) if "requirements.yaml" in files else None
+    eval_data = json.loads(files["eval_set.json"]) if "eval_set.json" in files else None
 
-    if agent_data and scorecards:
-        accepted = [sc for sc in scorecards if "[ROLLED BACK]" not in str(sc.get("label", ""))]
-        final_sc = accepted[-1] if accepted else scorecards[-1]
+    accepted = [sc for sc in scorecards if "[ROLLED BACK]" not in str(sc.get("label", ""))]
+    final_sc = accepted[-1] if accepted else (scorecards[-1] if scorecards else None)
+
+    if agent_data and final_sc:
         c1, c2, c3, c4 = st.columns(4)
         c1.metric(
             "Final Pass Rate",
             f"{round(final_sc['pass_rate'] * 100, 1)}%",
             f"{final_sc['passed_cases']}/{final_sc['total_cases']} cases",
         )
-        c2.metric("Composite Score", f"{final_sc['mean_composite_score']:.3f}", f"Refusal Acc: {final_sc['refusal_accuracy']:.2f}")
-        c3.metric("Standard Tools", len(agent_data.get("tools", [])), f"Out of {len(TOOL_CATALOG)} available")
-        c4.metric("Custom Macros (AST)", len(agent_data.get("custom_tools", [])), f"{sum(1 for it in iterations if it.get('accepted'))} accepted iters")
+        c2.metric(
+            "Composite Score",
+            f"{final_sc['mean_composite_score']:.3f}",
+            f"Refusal Acc: {final_sc['refusal_accuracy']:.2f} | Contract: {final_sc['contract_adherence']:.2f}",
+        )
+        c3.metric(
+            "Tools & Macros",
+            f"{len(agent_data.get('tools', []))} std · {len(agent_data.get('custom_tools', []))} macro",
+            f"{sum(1 for it in iterations if it.get('accepted'))} accepted opt iters",
+        )
+        c4.metric(
+            "Model / Judge",
+            str(agent_data.get("model_name", "-")),
+            f"Judge: {agent_data.get('judge_model_name', '-')}",
+        )
 
-    # Tool & Custom Macro breakdown
+    honest_summary = _extract_honest_summary(files["report.md"])
+    if honest_summary:
+        st.info(f"**Honest Assessment:** {honest_summary}")
+
+    # Tools & Capability Gate Reasoning (compact)
     if agent_data:
         col_l, col_r = st.columns(2)
         with col_l:
-            st.markdown("#### Attached Tools & Synthesized Custom Macros")
+            st.markdown("#### Attached Tools & Custom Macros")
             for t in agent_data.get("tools", []):
-                st.success(f"**{t['name']}** — {t.get('description', '')}")
+                st.success(f"**`{t['name']}`** — {t.get('description', '')}")
             for ct in agent_data.get("custom_tools", []):
                 detail = (
-                    f"Formula: `{ct.get('expression')}` (params: `{ct.get('parameters')}`)"
+                    f"Formula: `{ct.get('expression')}`"
                     if ct.get("tool_type") == "formula"
-                    else f"Tabular Filter on `{ct.get('target_file')}`: `{ct.get('preset_filters')}`"
+                    else f"Filter on `{ct.get('target_file')}`: `{ct.get('preset_filters')}`"
                 )
-                st.info(f"**Custom Macro `{ct['name']}`** ({ct.get('tool_type')}) — {ct.get('description', '')}\n\n{detail}")
+                st.info(f"**Custom Macro `{ct['name']}`** ({ct.get('tool_type')}) — {detail}")
             if not agent_data.get("tools") and not agent_data.get("custom_tools"):
-                st.caption("No external tools attached (pure grounded RAG policy mode).")
+                st.caption("Pure grounded RAG policy mode (0 external tools required).")
         with col_r:
-            st.markdown("#### Excluded Tools (Capability Gate)")
+            st.markdown("#### Groundability & Tool Gate")
+            g_meta = (req_data or {}).get("groundability", {})
+            if g_meta:
+                st.caption(
+                    f"**Groundability Status:** `{g_meta.get('overall_status', '-')}` "
+                    f"(ratio={g_meta.get('groundability_ratio', '-')})"
+                )
             rejected = (req_data or {}).get("rejected_tools", {})
             if rejected:
-                rej_rows = [{"Tool": k, "Exclusion Reason": v} for k, v in rejected.items()]
-                st.dataframe(pd.DataFrame(rej_rows), use_container_width=True, hide_index=True)
-            else:
-                st.caption("No excluded tool logs recorded.")
+                with st.expander(f"Excluded Off-Domain Tools ({len(rejected)} rejected deterministically)", expanded=False):
+                    rej_rows = [{"Tool": k, "Why Excluded": v} for k, v in rejected.items()]
+                    st.dataframe(pd.DataFrame(rej_rows), use_container_width=True, hide_index=True)
 
-    # Scorecard progression chart
-    if len(scorecards) >= 1:
-        st.markdown("#### Evaluation Scorecard Progression")
-        chart_df = pd.DataFrame(
-            [
-                {
-                    "Stage": f"Iter {sc['iteration']}: {sc['label'][:24]}",
-                    "Pass Rate (%)": round(sc["pass_rate"] * 100, 1),
-                    "Composite (%)": round(sc["mean_composite_score"] * 100, 1),
-                    "Groundedness (%)": round(sc["mean_groundedness"] * 100, 1),
-                }
-                for sc in scorecards
+    # Scorecard progression & Category Breakdown
+    if scorecards and final_sc:
+        ch_l, ch_r = st.columns([3, 2])
+        with ch_l:
+            st.markdown("#### Optimization & Scorecard Trend")
+            chart_df = pd.DataFrame(
+                [
+                    {
+                        "Stage": f"Iter {sc['iteration']}: {str(sc.get('label', ''))[:24]}",
+                        "Pass Rate (%)": round(sc["pass_rate"] * 100, 1),
+                        "Composite (%)": round(sc["mean_composite_score"] * 100, 1),
+                        "Groundedness (%)": round(sc["mean_groundedness"] * 100, 1),
+                    }
+                    for sc in scorecards
+                ]
+            ).set_index("Stage")
+            st.line_chart(chart_df[["Pass Rate (%)", "Composite (%)", "Groundedness (%)"]])
+        with ch_r:
+            st.markdown("#### Results by Category")
+            by_cat = final_sc.get("by_category") or {}
+            if by_cat:
+                cat_rows = [
+                    {
+                        "Category": cat,
+                        "Passed": f"{int(vals['passed'])}/{int(vals['total'])}",
+                        "Pass Rate": f"{round(vals['pass_rate'] * 100, 1)}%",
+                        "Composite": round(vals["mean_score"], 3),
+                    }
+                    for cat, vals in by_cat.items()
+                ]
+                st.dataframe(pd.DataFrame(cat_rows), use_container_width=True, hide_index=True)
+            f_counts = {k: v for k, v in (final_sc.get("failure_counts") or {}).items() if v}
+            if f_counts:
+                st.caption(f"**Failure Breakdown:** {', '.join(f'{k}: {v}' for k, v in f_counts.items())}")
+
+    # Clean, focused reasoning & evidence expanders (no visual overload)
+    if final_sc:
+        failed_verdicts = [v for v in final_sc.get("verdicts", []) if not v.get("passed")]
+        if failed_verdicts:
+            with st.expander(f"What Still Fails & Why ({len(failed_verdicts)} cases)", expanded=False):
+                fail_rows = [
+                    {
+                        "Case": v.get("case_id"),
+                        "Type": f"{v.get('category')} / {v.get('sub_type')}",
+                        "Failure Category": v.get("failure_category"),
+                        "Reasoning / Root Cause": v.get("failure_reason"),
+                        "Question": v.get("question"),
+                    }
+                    for v in failed_verdicts
+                ]
+                st.dataframe(pd.DataFrame(fail_rows), use_container_width=True, hide_index=True)
+
+    if iterations or "iteration_log.md" in files:
+        with st.expander("Critic-Optimizer Reasoning & Patch Log", expanded=False):
+            st.markdown(files.get("iteration_log.md", "_No optimization iterations needed._"))
+
+    if eval_data and eval_data.get("cases"):
+        cases_list = eval_data["cases"]
+        with st.expander(f"Generated Test Cases ({len(cases_list)} eval cases)", expanded=False):
+            cat_filter = st.selectbox(
+                "Filter test category",
+                options=["all", "answerable", "out_of_scope", "edge_case"],
+                key=f"{context}_eval_filter_{out_dir.name}_{len(cases_list)}",
+            )
+            filtered_cases = [
+                c for c in cases_list if cat_filter == "all" or c.get("category") == cat_filter
             ]
-        ).set_index("Stage")
-        st.line_chart(chart_df[["Pass Rate (%)", "Composite (%)", "Groundedness (%)"]])
+            case_rows = [
+                {
+                    "ID": c.get("case_id"),
+                    "Category": c.get("category"),
+                    "Sub-type": c.get("sub_type"),
+                    "Expected": c.get("expected_behavior"),
+                    "Question": c.get("question"),
+                    "Key Facts": " | ".join(c.get("key_facts") or []) or "(Must refuse)",
+                }
+                for c in filtered_cases
+            ]
+            st.dataframe(pd.DataFrame(case_rows), use_container_width=True, hide_index=True)
+
+    baseline_md = out_dir / "baseline_comparison.md"
+    if baseline_md.exists():
+        with st.expander("Human Baseline vs ForgeAI Comparison", expanded=False):
+            st.markdown(baseline_md.read_text(encoding="utf-8"))
+
+    reg_demo_md = out_dir / "regression_demo" / "regression_report.md"
+    if reg_demo_md.exists():
+        with st.expander("Committed Regression Audit (v1 vs v2 Docs)", expanded=False):
+            st.markdown(reg_demo_md.read_text(encoding="utf-8"))
+
+    with st.expander("Full Quality Report (`report.md`)", expanded=False):
+        st.markdown(files["report.md"])
 
     # Download bundle artifacts
     st.markdown("#### Download Auditable Artifacts")
@@ -207,10 +324,14 @@ def _render_bundle_results(out_dir: Path) -> None:
     ]
     for col, (fname, label, mime) in zip(dl_cols, dl_specs):
         if fname in files:
-            col.download_button(label=f"Download {label}", data=files[fname], file_name=fname, mime=mime, use_container_width=True)
-
-    with st.expander("Full Quality Report (`report.md`)", expanded=True):
-        st.markdown(files["report.md"])
+            col.download_button(
+                label=f"Download {label}",
+                data=files[fname],
+                file_name=f"{out_dir.parent.name}_{fname}" if out_dir.name == "output" else fname,
+                mime=mime,
+                key=f"{context}_dl_{out_dir}_{fname}",
+                use_container_width=True,
+            )
 
 
 def _read_streamlit_secret_gemini_key() -> str:
@@ -820,6 +941,26 @@ def _render_regression_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
         st.markdown(rep_md)
 
 
+def _render_reports_tab() -> None:
+    """Tab 4: Clean Executive Explorer for Already-Built Demos & Evaluation Benchmarks."""
+    st.markdown("### Saved Reports & Benchmark Results")
+    st.caption(
+        "Inspect the key metrics, tool selection reasoning, scorecards, failure analysis, and test suites "
+        "for committed demos or newly built agents."
+    )
+    bundles = _discover_agent_bundles()
+    if not bundles:
+        st.info("No saved agent bundles found yet. Build an agent in Tab 1 first.")
+        return
+
+    selected_label = st.selectbox(
+        "Select Agent Report Bundle",
+        options=list(bundles.keys()),
+        key="reports_bundle_select",
+    )
+    _render_bundle_results(bundles[selected_label], context="tab4")
+
+
 def main() -> None:
     st.set_page_config(
         page_title="ForgeAI — Autonomous Agent Factory",
@@ -837,11 +978,12 @@ def main() -> None:
 
     sidebar_cfg = _render_sidebar(cfg)
 
-    tab1, tab2, tab3 = st.tabs(
+    tab1, tab2, tab3, tab4 = st.tabs(
         [
             "1. Agent Factory (Build & Optimize)",
             "2. Chat Runner & Evidence Inspector",
             "3. Regression Mode (Doc Diffs)",
+            "4. Reports & Results",
         ]
     )
 
@@ -851,6 +993,8 @@ def main() -> None:
         _render_chat_tab(cfg, sidebar_cfg)
     with tab3:
         _render_regression_tab(cfg, sidebar_cfg)
+    with tab4:
+        _render_reports_tab()
 
 
 if __name__ == "__main__":

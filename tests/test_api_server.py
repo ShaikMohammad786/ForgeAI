@@ -119,3 +119,17 @@ def test_ui_helpers_match_live_corpus_and_trace_schemas(tmp_path: Path) -> None:
     assert isinstance(meta["chunks"][0]["bm25"], float)
     assert isinstance(meta["chunks"][0]["dense"], float)
 
+
+def test_ui_reports_bundle_discovery_and_summary_extraction() -> None:
+    from forgeai.ui.app import _discover_agent_bundles, _extract_honest_summary, _load_bundle_summary_files
+
+    bundles = _discover_agent_bundles()
+    assert bundles
+    for label, bdir in bundles.items():
+        files = _load_bundle_summary_files(bdir)
+        assert "report.md" in files, f"Missing report.md in {label}"
+        assert "scorecard.json" in files, f"Missing scorecard.json in {label}"
+        summary = _extract_honest_summary(files["report.md"])
+        assert len(summary) >= 20
+
+
