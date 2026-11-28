@@ -30,6 +30,7 @@ def run_regression_check(
     judge_provider: str | None = None,
     judge_model_name: str | None = None,
     gemini_api_key: str | None = None,
+    ollama_host: str | None = None,
     use_llm_judge: bool = True,
     settings: ForgeSettings | None = None,
 ) -> tuple[RegressionDiff, IterationScorecard]:
@@ -77,6 +78,7 @@ def run_regression_check(
         judge_provider=judge_provider,
         judge_model_name=judge_model_name or old_agent.judge_model_name,
         gemini_api_key=gemini_api_key,
+        ollama_host=ollama_host,
         budget=budget,
         settings=cfg,
     )

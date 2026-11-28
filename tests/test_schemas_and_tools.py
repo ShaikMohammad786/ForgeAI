@@ -254,3 +254,32 @@ def test_custom_macro_ast_validation_and_execution(tmp_path: Path) -> None:
     )
     assert "A1" in tab_out and "B2" not in tab_out
 
+
+def test_custom_ollama_tunnel_host_propagation(monkeypatch) -> None:
+    from forgeai.llm.ollama_client import OllamaProvider
+    from forgeai.llm.router import build_factory_providers, discover_backends
+
+    seen_hosts: list[str] = []
+
+    def fake_is_avail(host: str = "") -> bool:
+        seen_hosts.append(host)
+        return True
+
+    def fake_list_models(host: str = "") -> list[str]:
+        seen_hosts.append(host)
+        return ["llama3.2:3b", "qwen2.5:1.5b"]
+
+    monkeypatch.setattr(OllamaProvider, "is_available", staticmethod(fake_is_avail))
+    monkeypatch.setattr(OllamaProvider, "list_local_models", staticmethod(fake_list_models))
+
+    tunnel = "https://user-gpu.trycloudflare.com/"
+    status = discover_backends(ollama_host=tunnel)
+    assert status.ollama_available is True
+    assert status.ollama_models == ["llama3.2:3b", "qwen2.5:1.5b"]
+    assert all(h == "https://user-gpu.trycloudflare.com" for h in seen_hosts)
+
+    gen, judge = build_factory_providers(provider="ollama", ollama_host=tunnel)
+    assert gen.host == "https://user-gpu.trycloudflare.com"
+    assert judge.host == "https://user-gpu.trycloudflare.com"
+
+

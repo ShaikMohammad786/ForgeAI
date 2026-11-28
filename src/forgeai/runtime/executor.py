@@ -62,6 +62,7 @@ class AgentRuntime:
         provider: str | None = None,
         model_name: str | None = None,
         gemini_api_key: str | None = None,
+        ollama_host: str | None = None,
         docs_dir_override: Path | None = None,
         settings: ForgeSettings | None = None,
     ) -> "AgentRuntime":
@@ -99,6 +100,7 @@ class AgentRuntime:
             provider=chosen_provider,
             model_name=chosen_model,
             gemini_api_key=gemini_api_key,
+            ollama_host=ollama_host,
             settings=cfg,
         )
         return cls(

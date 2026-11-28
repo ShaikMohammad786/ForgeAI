@@ -20,11 +20,16 @@ class BackendStatus:
     gemini_models: list[str]
 
 
-def discover_backends(settings: ForgeSettings | None = None) -> BackendStatus:
-    """Detect available local Ollama models and configured Gemini credentials."""
+def discover_backends(
+    settings: ForgeSettings | None = None,
+    *,
+    ollama_host: str | None = None,
+) -> BackendStatus:
+    """Detect available local/tunneled Ollama models and configured Gemini credentials."""
     cfg = settings or get_settings()
-    ollama_ok = OllamaProvider.is_available(cfg.ollama_host)
-    ollama_models = OllamaProvider.list_local_models(cfg.ollama_host) if ollama_ok else []
+    target_host = (ollama_host or cfg.ollama_host).strip().rstrip("/") or cfg.ollama_host
+    ollama_ok = OllamaProvider.is_available(target_host)
+    ollama_models = OllamaProvider.list_local_models(target_host) if ollama_ok else []
     gemini_ok = bool(cfg.effective_gemini_key)
     gemini_models = GeminiProvider.list_recommended_models()
     return BackendStatus(
@@ -38,6 +43,8 @@ def discover_backends(settings: ForgeSettings | None = None) -> BackendStatus:
 def resolve_provider_choice(
     provider: str | None = None,
     settings: ForgeSettings | None = None,
+    *,
+    ollama_host: str | None = None,
 ) -> str:
     """Resolve 'auto', 'ollama', or 'gemini' into a concrete backend."""
     cfg = settings or get_settings()
@@ -45,7 +52,7 @@ def resolve_provider_choice(
     if requested in {"ollama", "gemini"}:
         return requested
 
-    status = discover_backends(cfg)
+    status = discover_backends(cfg, ollama_host=ollama_host)
     if status.ollama_available and status.ollama_models:
         return "ollama"
     if status.gemini_available:
@@ -62,12 +69,14 @@ def build_provider(
     provider: str | None = None,
     model_name: str | None = None,
     gemini_api_key: str | None = None,
+    ollama_host: str | None = None,
     budget: BudgetTracker | None = None,
     settings: ForgeSettings | None = None,
 ) -> LLMProvider:
     """Instantiate a single LLMProvider for either Ollama or Gemini."""
     cfg = settings or get_settings()
-    chosen = resolve_provider_choice(provider, cfg)
+    target_host = (ollama_host or cfg.ollama_host).strip().rstrip("/") or cfg.ollama_host
+    chosen = resolve_provider_choice(provider, cfg, ollama_host=target_host)
 
     if chosen == "gemini":
         key = (gemini_api_key or cfg.effective_gemini_key).strip()
@@ -79,8 +88,8 @@ def build_provider(
             budget=budget,
         )
 
-    # Local Ollama
-    local_models = OllamaProvider.list_local_models(cfg.ollama_host)
+    # Local or tunneled Ollama
+    local_models = OllamaProvider.list_local_models(target_host)
     chosen_model = model_name or cfg.ollama_model
     if local_models and chosen_model not in local_models:
         # Prefer qwen2.5:3b -> qwen2.5:1.5b -> first available local model
@@ -93,7 +102,7 @@ def build_provider(
 
     return OllamaProvider(
         model_name=chosen_model,
-        host=cfg.ollama_host,
+        host=target_host,
         budget=budget,
     )
 
@@ -105,15 +114,18 @@ def build_factory_providers(
     judge_provider: str | None = None,
     judge_model_name: str | None = None,
     gemini_api_key: str | None = None,
+    ollama_host: str | None = None,
     budget: BudgetTracker | None = None,
     settings: ForgeSettings | None = None,
 ) -> tuple[LLMProvider, LLMProvider]:
     """Build distinct generator and judge LLMProviders (reduces self-preference bias)."""
     cfg = settings or get_settings()
+    target_host = (ollama_host or cfg.ollama_host).strip().rstrip("/") or cfg.ollama_host
     main_prov = build_provider(
         provider=provider,
         model_name=model_name,
         gemini_api_key=gemini_api_key,
+        ollama_host=target_host,
         budget=budget,
         settings=cfg,
     )
@@ -127,7 +139,7 @@ def build_factory_providers(
     elif effective_judge_provider == "gemini":
         j_model = cfg.gemini_judge_model
     else:
-        local = OllamaProvider.list_local_models(cfg.ollama_host)
+        local = OllamaProvider.list_local_models(target_host)
         # Use a distinct small model for cross-judging if available
         other_models = [m for m in local if m != main_prov.model_name]
         if cfg.ollama_judge_model in local and cfg.ollama_judge_model != main_prov.model_name:
@@ -141,6 +153,7 @@ def build_factory_providers(
         provider=effective_judge_provider,
         model_name=j_model,
         gemini_api_key=gemini_api_key,
+        ollama_host=target_host,
         budget=budget,
         settings=cfg,
     )

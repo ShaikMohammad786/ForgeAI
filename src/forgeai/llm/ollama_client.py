@@ -11,8 +11,11 @@ import ollama
 from forgeai.llm.base import BudgetTracker, LLMProvider, LLMResponse, LLMUnavailableError
 
 
+_TUNNEL_HEADERS = {"ngrok-skip-browser-warning": "true"}
+
+
 class OllamaProvider(LLMProvider):
-    """Ollama client supporting any locally pulled open model."""
+    """Ollama client supporting any locally or remotely hosted Ollama daemon."""
 
     provider_name = "ollama"
 
@@ -25,13 +28,21 @@ class OllamaProvider(LLMProvider):
     ) -> None:
         super().__init__(model_name=model_name, budget=budget)
         self.host = host.rstrip("/")
-        self.client = ollama.Client(host=self.host, timeout=timeout_seconds)
+        self.client = ollama.Client(
+            host=self.host,
+            timeout=timeout_seconds,
+            headers=_TUNNEL_HEADERS,
+        )
 
     @staticmethod
     def list_local_models(host: str = "http://127.0.0.1:11434") -> list[str]:
-        """Return installed Ollama model tags or [] if Ollama server is down."""
+        """Return installed Ollama model tags or [] if Ollama server is unreachable."""
         try:
-            resp = httpx.get(f"{host.rstrip('/')}/api/tags", timeout=3.0)
+            resp = httpx.get(
+                f"{host.rstrip('/')}/api/tags",
+                headers=_TUNNEL_HEADERS,
+                timeout=4.0,
+            )
             resp.raise_for_status()
             data = resp.json()
             return [m["name"] for m in data.get("models", []) if m.get("name")]
@@ -40,9 +51,13 @@ class OllamaProvider(LLMProvider):
 
     @staticmethod
     def is_available(host: str = "http://127.0.0.1:11434") -> bool:
-        """Check whether the local Ollama HTTP daemon responds."""
+        """Check whether the Ollama HTTP daemon responds."""
         try:
-            resp = httpx.get(f"{host.rstrip('/')}/api/tags", timeout=2.5)
+            resp = httpx.get(
+                f"{host.rstrip('/')}/api/tags",
+                headers=_TUNNEL_HEADERS,
+                timeout=4.0,
+            )
             return resp.status_code == 200
         except Exception:
             return False
