@@ -91,6 +91,45 @@ def _load_bundle_summary_files(out_dir: Path) -> dict[str, Any]:
     return loaded
 
 
+def _corpus_to_inventory_rows(corpus: Any) -> list[dict[str, Any]]:
+    """Convert LoadedCorpus into clean UI summary table rows."""
+    return [
+        {
+            "Filename": d.summary.filename,
+            "Type": d.summary.doc_type.upper(),
+            "Pages / Rows": d.summary.num_pages_or_rows,
+            "Sections": len(d.sections),
+            "Characters": len(d.full_text),
+            "Key Headings / Schema": ", ".join(d.summary.key_headings[:3]) or "-",
+        }
+        for d in corpus.documents
+    ]
+
+
+def _trace_to_chat_meta(trace: Any) -> dict[str, Any]:
+    """Convert ExecutionTrace into serializable Streamlit chat metadata."""
+    resp = trace.response
+    return {
+        "refused": resp.refused,
+        "confidence": resp.confidence,
+        "latency_ms": trace.latency_ms,
+        "tools_used": resp.tools_used,
+        "citations": resp.citations,
+        "tool_outputs": trace.tool_outputs,
+        "chunks": [
+            {
+                "source": h.chunk.source,
+                "location": h.chunk.page_or_row,
+                "score": h.score,
+                "bm25": h.bm25_score,
+                "dense": h.dense_score,
+                "text": h.chunk.text,
+            }
+            for h in trace.retrieved_chunks
+        ],
+    }
+
+
 def _render_bundle_results(out_dir: Path) -> None:
     """Render scorecard KPIs, tools & custom macros, charts, and downloads for a finished build."""
     files = _load_bundle_summary_files(out_dir)
@@ -333,17 +372,7 @@ def _render_factory_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
         try:
             preview_corpus = load_corpus(docs_dir)
             if preview_corpus.documents:
-                inv_rows = [
-                    {
-                        "Filename": d.summary.filename,
-                        "Type": d.summary.doc_type.upper(),
-                        "Pages / Rows": d.summary.num_pages_or_rows,
-                        "Sections": len(d.sections),
-                        "Characters": len(d.full_text),
-                        "Key Headings / Schema": ", ".join(d.summary.key_headings[:3]) or "-",
-                    }
-                    for d in preview_corpus.documents
-                ]
+                inv_rows = _corpus_to_inventory_rows(preview_corpus)
                 with st.expander(f"Corpus Inventory Preview ({len(inv_rows)} files loaded)", expanded=True):
                     st.dataframe(pd.DataFrame(inv_rows), use_container_width=True, hide_index=True)
             else:
@@ -707,25 +736,7 @@ def _render_chat_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
                 {
                     "role": "assistant",
                     "content": resp.answer,
-                    "meta": {
-                        "refused": resp.refused,
-                        "confidence": resp.confidence,
-                        "latency_ms": trace.latency_ms,
-                        "tools_used": resp.tools_used,
-                        "citations": resp.citations,
-                        "tool_outputs": trace.tool_outputs,
-                        "chunks": [
-                            {
-                                "source": h.chunk.source,
-                                "location": h.chunk.page_or_row,
-                                "score": h.combined_score,
-                                "bm25": h.bm25_score,
-                                "dense": h.dense_score,
-                                "text": h.chunk.text,
-                            }
-                            for h in trace.retrieved_chunks
-                        ],
-                    },
+                    "meta": _trace_to_chat_meta(trace),
                 }
             )
             st.rerun()

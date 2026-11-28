@@ -80,3 +80,42 @@ def test_chat_endpoint_loads_agent_and_answers(monkeypatch, tmp_path: Path) -> N
     body = resp.json()
     assert body["response"]["refused"] is False
     assert "24" in body["response"]["answer"]
+
+
+def test_ui_helpers_match_live_corpus_and_trace_schemas(tmp_path: Path) -> None:
+    from forgeai.ingestion.loader import load_corpus
+    from forgeai.runtime.executor import AgentRuntime
+    from forgeai.ui.app import _corpus_to_inventory_rows, _trace_to_chat_meta
+
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    (docs_dir / "hr.md").write_text("# Leave\nShore staff receive 24 paid annual leave days.\n", encoding="utf-8")
+
+    corpus = load_corpus(docs_dir)
+    rows = _corpus_to_inventory_rows(corpus)
+    assert len(rows) == 1
+    assert rows[0]["Filename"] == "hr.md"
+    assert rows[0]["Sections"] >= 1
+    assert rows[0]["Characters"] >= 10
+
+    agent = AgentDefinition(
+        agent_id="ui-helper-test",
+        name="UI Helper Agent",
+        brief="HR",
+        provider="ollama",
+        model_name="dummy",
+        judge_model_name="dummy",
+        system_prompt="Answer HR questions.",
+        retrieval=RetrievalConfig(min_score_threshold=0.0),
+        docs_dir=str(docs_dir),
+        created_at="2026-01-01T00:00:00Z",
+    )
+    rt = AgentRuntime(agent, _DummyAPIChatLLM("dummy"), corpus=corpus, docs_dir_override=docs_dir)
+    trace = rt.ask("How many annual leave days?")
+    meta = _trace_to_chat_meta(trace)
+    assert meta["refused"] is False
+    assert meta["chunks"]
+    assert isinstance(meta["chunks"][0]["score"], float)
+    assert isinstance(meta["chunks"][0]["bm25"], float)
+    assert isinstance(meta["chunks"][0]["dense"], float)
+
