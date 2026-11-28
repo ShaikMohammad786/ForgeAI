@@ -22,6 +22,7 @@ def compare_factory_vs_human(
     out_md: Path,
     provider: str | None = None,
     model_name: str | None = None,
+    judge_provider: str | None = None,
     judge_model_name: str | None = None,
 ) -> dict:
     cfg = get_settings()
@@ -46,7 +47,11 @@ def compare_factory_vs_human(
     )
 
     llm = build_provider(provider=chosen_prov, model_name=chosen_model, settings=cfg)
-    judge_llm = build_provider(provider=chosen_prov, model_name=chosen_judge, settings=cfg)
+    judge_llm = build_provider(
+        provider=judge_provider or chosen_prov,
+        model_name=chosen_judge,
+        settings=cfg,
+    )
 
     human_rt = AgentRuntime(human_agent, llm, embed_model_name=cfg.embed_model)
     forge_rt = AgentRuntime(forge_agent, llm, embed_model_name=cfg.embed_model)

@@ -236,13 +236,14 @@ def eval_cmd(
     out: Optional[Path] = typer.Option(None, "--out", "-o", help="Optional output JSON scorecard path."),
     provider: Optional[str] = typer.Option(None, "--provider", "-p"),
     model: Optional[str] = typer.Option(None, "--model", "-m"),
+    judge_provider: Optional[str] = typer.Option(None, "--judge-provider"),
     judge_model: Optional[str] = typer.Option(None, "--judge-model"),
 ) -> None:
     """Evaluate any agent definition against an eval_set.json."""
     cfg = get_settings()
     runtime = AgentRuntime.from_directory(agent_dir, provider=provider, model_name=model, settings=cfg)
     judge = build_provider(
-        provider=provider or runtime.llm.provider_name,
+        provider=judge_provider or provider or runtime.llm.provider_name,
         model_name=judge_model or runtime.agent.judge_model_name,
         settings=cfg,
     )
@@ -290,6 +291,7 @@ def baseline(
     out_md: Path = typer.Option(..., "--out", help="Output markdown comparison report path."),
     provider: Optional[str] = typer.Option(None, "--provider", "-p"),
     model: Optional[str] = typer.Option(None, "--model", "-m"),
+    judge_provider: Optional[str] = typer.Option(None, "--judge-provider"),
     judge_model: Optional[str] = typer.Option(None, "--judge-model"),
 ) -> None:
     """Bonus 4: Compare hand-written human baseline against ForgeAI generated agent."""
@@ -325,6 +327,17 @@ def ui(
         [sys.executable, "-m", "streamlit", "run", str(app_path), "--server.port", str(port)],
         check=True,
     )
+
+
+@app.command()
+def serve(
+    host: str = typer.Option("127.0.0.1", "--host", help="FastAPI bind host."),
+    port: int = typer.Option(8000, "--port", help="FastAPI server port."),
+) -> None:
+    """Launch the optional ForgeAI FastAPI REST server with OpenAPI docs at /docs."""
+    import uvicorn
+
+    uvicorn.run("forgeai.api.server:app", host=host, port=port, reload=False)
 
 
 if __name__ == "__main__":
