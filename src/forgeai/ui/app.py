@@ -272,9 +272,9 @@ def _render_bundle_results(out_dir: Path, *, context: str = "tab1") -> None:
                 ]
                 st.dataframe(pd.DataFrame(fail_rows), use_container_width=True, hide_index=True)
 
-    if iterations or "iteration_log.md" in files:
+    if iterations and "iteration_log.md" in files:
         with st.expander("Critic-Optimizer Reasoning & Patch Log", expanded=False):
-            st.markdown(files.get("iteration_log.md", "_No optimization iterations needed._"))
+            st.markdown(files["iteration_log.md"])
 
     if eval_data and eval_data.get("cases"):
         cases_list = eval_data["cases"]
@@ -878,8 +878,48 @@ def _render_regression_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
     sel_label = st.selectbox("Baseline Agent Bundle", options=list(bundles.keys()), key="reg_bundle_select")
     sel_dir = bundles[sel_label]
 
+    # Display current baseline documents & hashes so users see what exists before uploading v2 docs
+    manifest_path = sel_dir / "corpus_manifest.json"
+    agent_yaml_path = sel_dir / "agent_definition.yaml"
+    baseline_docs_dir: Path | None = None
+    if agent_yaml_path.exists():
+        raw_agent = yaml.safe_load(agent_yaml_path.read_text(encoding="utf-8")) or {}
+        cand_dir = Path(str(raw_agent.get("docs_dir", "")))
+        if cand_dir.exists() and cand_dir.is_dir():
+            baseline_docs_dir = cand_dir
+        elif (sel_dir.parent / "docs").exists():
+            baseline_docs_dir = sel_dir.parent / "docs"
+
+    manifest_data = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else {}
+    if manifest_data:
+        doc_rows = [
+            {
+                "Filename": meta.get("filename", fname),
+                "Format": str(meta.get("doc_type", "")).upper(),
+                "Size (Bytes)": meta.get("size_bytes", "-"),
+                "SHA-256 (prefix)": str(meta.get("sha256", ""))[:12],
+            }
+            for fname, meta in manifest_data.items()
+        ]
+        st.markdown("#### Current Baseline Documents")
+        st.dataframe(pd.DataFrame(doc_rows), use_container_width=True, hide_index=True)
+
+    if baseline_docs_dir and baseline_docs_dir.exists():
+        available_files = sorted(p for p in baseline_docs_dir.iterdir() if p.is_file())
+        if available_files:
+            with st.expander("Download Baseline Files (optional — edit and re-upload below to test diffing)", expanded=False):
+                dcols = st.columns(min(len(available_files), 4))
+                for idx, fpath in enumerate(available_files):
+                    dcols[idx % len(dcols)].download_button(
+                        label=fpath.name,
+                        data=fpath.read_bytes(),
+                        file_name=fpath.name,
+                        key=f"reg_dl_{sel_dir}_{fpath.name}",
+                        use_container_width=True,
+                    )
+
     reg_uploads = st.file_uploader(
-        "Upload Updated Documents",
+        "Upload Updated Documents (re-upload edited versions or a subset to simulate modified/removed files)",
         type=UPLOAD_TYPES,
         accept_multiple_files=True,
         key="reg_uploader",
