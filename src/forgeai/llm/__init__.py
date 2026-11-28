@@ -11,6 +11,7 @@ from forgeai.llm.base import (
 )
 from forgeai.llm.gemini_client import GeminiProvider
 from forgeai.llm.ollama_client import OllamaProvider
+from forgeai.llm.openai_compat_client import OPENAI_COMPAT_PRESETS, OpenAICompatProvider
 from forgeai.llm.router import (
     BackendStatus,
     build_factory_providers,
@@ -27,7 +28,9 @@ __all__ = [
     "LLMProvider",
     "LLMResponse",
     "LLMUnavailableError",
+    "OPENAI_COMPAT_PRESETS",
     "OllamaProvider",
+    "OpenAICompatProvider",
     "build_factory_providers",
     "build_provider",
     "discover_backends",

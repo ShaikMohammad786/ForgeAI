@@ -283,3 +283,68 @@ def test_custom_ollama_tunnel_host_propagation(monkeypatch) -> None:
     assert judge.host == "https://user-gpu.trycloudflare.com"
 
 
+def test_openai_compatible_provider_and_retry_fallback(monkeypatch) -> None:
+    import httpx
+    from forgeai.llm.openai_compat_client import OpenAICompatProvider
+    from forgeai.llm.router import build_factory_providers
+
+    seen_payloads: list[dict] = []
+
+    class _FakeResp:
+        def __init__(self, status_code: int, json_data: dict, text: str = "") -> None:
+            self.status_code = status_code
+            self._json = json_data
+            self.text = text
+
+        def json(self) -> dict:
+            return self._json
+
+        def raise_for_status(self) -> None:
+            if self.status_code >= 400:
+                req = httpx.Request("POST", "https://api.example.com/v1/chat/completions")
+                raise httpx.HTTPStatusError("err", request=req, response=httpx.Response(self.status_code, text=self.text))
+
+    class _FakeClient:
+        def __init__(self, **kwargs) -> None:
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def post(self, url, headers=None, json=None):
+            seen_payloads.append(dict(json or {}))
+            if "response_format" in (json or {}):
+                return _FakeResp(400, {}, text="response_format unsupported")
+            return _FakeResp(
+                200,
+                {
+                    "choices": [{"message": {"content": '<think>hidden</think>{"ok": true}'}}],
+                    "usage": {"prompt_tokens": 12, "completion_tokens": 8, "total_tokens": 20},
+                },
+            )
+
+    monkeypatch.setattr(httpx, "Client", _FakeClient)
+    monkeypatch.setattr(httpx, "get", lambda *a, **kw: _FakeResp(200, {"data": [{"id": "llama-3.3-70b"}]}))
+
+    models = OpenAICompatProvider.list_models("https://api.groq.com/openai/v1/", api_key="test-key")
+    assert models == ["llama-3.3-70b"]
+
+    gen, judge = build_factory_providers(
+        provider="openai_compatible",
+        model_name="llama-3.3-70b",
+        openai_base_url="https://api.groq.com/openai/v1/chat/completions",
+        openai_api_key="test-key",
+    )
+    assert gen.base_url == "https://api.groq.com/openai/v1"
+    assert judge.provider_name == "openai_compatible"
+
+    out = gen.complete([{"role": "user", "content": "hi"}], json_mode=True)
+    assert len(seen_payloads) == 2  # First attempted json_object, fell back cleanly on 400
+    assert out.text == '{"ok": true}'
+    assert out.total_tokens == 20
+
+
+

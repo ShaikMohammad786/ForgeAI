@@ -8,6 +8,7 @@ from forgeai.config import ForgeSettings, get_settings
 from forgeai.llm.base import BudgetTracker, LLMProvider, LLMUnavailableError
 from forgeai.llm.gemini_client import GeminiProvider
 from forgeai.llm.ollama_client import OllamaProvider
+from forgeai.llm.openai_compat_client import OpenAICompatProvider
 
 
 @dataclass
@@ -46,21 +47,27 @@ def resolve_provider_choice(
     *,
     ollama_host: str | None = None,
 ) -> str:
-    """Resolve 'auto', 'ollama', or 'gemini' into a concrete backend."""
+    """Resolve 'auto', 'ollama', 'gemini', or 'openai_compatible' into a concrete backend."""
     cfg = settings or get_settings()
-    requested = (provider or cfg.provider or "auto").lower()
-    if requested in {"ollama", "gemini"}:
-        return requested
+    requested = (provider or cfg.provider or "auto").lower().strip()
+    if requested in {"openai", "openai-compat", "openai_compat", "openai_compatible", "custom"}:
+        return "openai_compatible"
+    if requested.startswith("gemini"):
+        return "gemini"
+    if requested == "ollama":
+        return "ollama"
 
     status = discover_backends(cfg, ollama_host=ollama_host)
     if status.ollama_available and status.ollama_models:
         return "ollama"
     if status.gemini_available:
         return "gemini"
+    if (cfg.openai_compat_base_url or "").strip():
+        return "openai_compatible"
     if status.ollama_available:
         return "ollama"
     raise LLMUnavailableError(
-        "No LLM backend available. Either start Ollama (`ollama serve`) or set GEMINI_API_KEY in .env."
+        "No LLM backend available. Start Ollama, configure GEMINI_API_KEY, or specify an OpenAI-compatible Base URL."
     )
 
 
@@ -70,10 +77,12 @@ def build_provider(
     model_name: str | None = None,
     gemini_api_key: str | None = None,
     ollama_host: str | None = None,
+    openai_base_url: str | None = None,
+    openai_api_key: str | None = None,
     budget: BudgetTracker | None = None,
     settings: ForgeSettings | None = None,
 ) -> LLMProvider:
-    """Instantiate a single LLMProvider for either Ollama or Gemini."""
+    """Instantiate a single LLMProvider for Ollama, Gemini, or OpenAI-compatible APIs."""
     cfg = settings or get_settings()
     target_host = (ollama_host or cfg.ollama_host).strip().rstrip("/") or cfg.ollama_host
     chosen = resolve_provider_choice(provider, cfg, ollama_host=target_host)
@@ -85,6 +94,17 @@ def build_provider(
             model_name=model,
             api_key=key,
             use_interactions=cfg.gemini_use_interactions,
+            budget=budget,
+        )
+
+    if chosen == "openai_compatible":
+        base_url = (openai_base_url or cfg.openai_compat_base_url or "").strip()
+        api_key = (openai_api_key or cfg.openai_compat_api_key or "").strip() or None
+        model = (model_name or cfg.openai_compat_model or "gpt-4o-mini").strip()
+        return OpenAICompatProvider(
+            model_name=model,
+            base_url=base_url,
+            api_key=api_key,
             budget=budget,
         )
 
@@ -115,6 +135,8 @@ def build_factory_providers(
     judge_model_name: str | None = None,
     gemini_api_key: str | None = None,
     ollama_host: str | None = None,
+    openai_base_url: str | None = None,
+    openai_api_key: str | None = None,
     budget: BudgetTracker | None = None,
     settings: ForgeSettings | None = None,
 ) -> tuple[LLMProvider, LLMProvider]:
@@ -126,18 +148,24 @@ def build_factory_providers(
         model_name=model_name,
         gemini_api_key=gemini_api_key,
         ollama_host=target_host,
+        openai_base_url=openai_base_url,
+        openai_api_key=openai_api_key,
         budget=budget,
         settings=cfg,
     )
 
-    effective_judge_provider = judge_provider or main_prov.provider_name
-    if effective_judge_provider.startswith("gemini"):
-        effective_judge_provider = "gemini"
+    effective_judge_provider = resolve_provider_choice(
+        judge_provider or main_prov.provider_name,
+        cfg,
+        ollama_host=target_host,
+    )
 
     if judge_model_name:
         j_model = judge_model_name
     elif effective_judge_provider == "gemini":
         j_model = cfg.gemini_judge_model
+    elif effective_judge_provider == "openai_compatible":
+        j_model = main_prov.model_name
     else:
         local = OllamaProvider.list_local_models(target_host)
         # Use a distinct small model for cross-judging if available
@@ -154,6 +182,8 @@ def build_factory_providers(
         model_name=j_model,
         gemini_api_key=gemini_api_key,
         ollama_host=target_host,
+        openai_base_url=openai_base_url,
+        openai_api_key=openai_api_key,
         budget=budget,
         settings=cfg,
     )

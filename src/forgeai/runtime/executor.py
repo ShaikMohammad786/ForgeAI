@@ -63,6 +63,8 @@ class AgentRuntime:
         model_name: str | None = None,
         gemini_api_key: str | None = None,
         ollama_host: str | None = None,
+        openai_base_url: str | None = None,
+        openai_api_key: str | None = None,
         docs_dir_override: Path | None = None,
         settings: ForgeSettings | None = None,
     ) -> "AgentRuntime":
@@ -101,6 +103,8 @@ class AgentRuntime:
             model_name=chosen_model,
             gemini_api_key=gemini_api_key,
             ollama_host=ollama_host,
+            openai_base_url=openai_base_url,
+            openai_api_key=openai_api_key,
             settings=cfg,
         )
         return cls(

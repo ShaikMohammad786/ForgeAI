@@ -31,6 +31,7 @@ from forgeai.factory.regression import run_regression_check
 from forgeai.factory.reporter import build_final_report, render_report_markdown
 from forgeai.ingestion.loader import SUPPORTED_EXTENSIONS, load_corpus
 from forgeai.llm.base import BudgetExceededError, BudgetTracker, LLMUnavailableError
+from forgeai.llm.openai_compat_client import OPENAI_COMPAT_PRESETS, OpenAICompatProvider
 from forgeai.llm.router import build_factory_providers, discover_backends
 from forgeai.runtime.executor import AgentRuntime
 from forgeai.schemas.agent import AgentDefinition
@@ -326,10 +327,10 @@ def _render_bundle_results(out_dir: Path, *, context: str = "tab1") -> None:
             )
 
 
-def _read_streamlit_secret_gemini_key() -> str:
-    """Read GEMINI_API_KEY from Streamlit Secrets when deployed on Streamlit Cloud / HF."""
+def _read_streamlit_secret(keys: tuple[str, ...]) -> str:
+    """Read an API key cleanly from Streamlit Secrets when deployed in Cloud."""
     try:
-        for k in ("GEMINI_API_KEY", "GOOGLE_API_KEY"):
+        for k in keys:
             val = st.secrets.get(k, "")
             if val:
                 return str(val).strip()
@@ -339,77 +340,139 @@ def _read_streamlit_secret_gemini_key() -> str:
 
 
 def _render_sidebar(cfg: ForgeSettings) -> dict[str, Any]:
-    """Render dual/hybrid execution settings & tunnel/local Ollama support in sidebar."""
-    secret_gemini_key = _read_streamlit_secret_gemini_key()
+    """Render clean 4-mode engine selector (Ollama, Gemini API, OpenAI-Compatible, Hybrid) in sidebar."""
+    secret_gemini_key = _read_streamlit_secret(("GEMINI_API_KEY", "GOOGLE_API_KEY"))
+    secret_openai_key = _read_streamlit_secret(("OPENAI_COMPAT_API_KEY", "OPENAI_API_KEY", "GROQ_API_KEY", "HF_TOKEN"))
+
+    default_probe = discover_backends(cfg)
+    default_mode_idx = 0 if default_probe.ollama_available else (1 if (default_probe.gemini_available or secret_gemini_key) else 1)
 
     with st.sidebar:
         st.markdown("## ForgeAI Engine Setup")
-        st.caption("Zero-server Streamlit runtime: run locally with Ollama, in cloud via Gemini API, or Hybrid.")
-
-        ollama_host_val = st.text_input(
-            "Ollama Server / Tunnel URL",
-            value=cfg.ollama_host,
-            key="ollama_host_input",
-            help=(
-                "Local PC: http://127.0.0.1:11434. On Streamlit Cloud, run: "
-                "`cloudflared tunnel --url http://127.0.0.1:11434 --http-host-header=\"localhost:11434\"` "
-                "and paste the generated https://...trycloudflare.com link here."
-            ),
-        ).strip()
-        effective_ollama_host = ollama_host_val.rstrip("/") or cfg.ollama_host
-        status = discover_backends(cfg, ollama_host=effective_ollama_host)
-        custom_tunnel_set = effective_ollama_host != cfg.ollama_host.rstrip("/")
+        st.caption("Zero-server runtime: run locally (Ollama / LM Studio / vLLM) or in cloud (Gemini / Groq / OpenAI / HF).")
 
         execution_mode = st.radio(
             "Execution Mode",
-            options=["Ollama (Local / Tunnel)", "Gemini API (Cloud)", "Hybrid (Mix Generator & Judge)"],
-            index=0 if (status.ollama_available and (custom_tunnel_set or not status.gemini_available)) else (1 if not status.ollama_available else 0),
+            options=[
+                "Ollama (Local / Tunnel)",
+                "Gemini API (Cloud)",
+                "OpenAI-Compatible / Other",
+                "Hybrid (Mix Generator & Judge)",
+            ],
+            index=default_mode_idx,
         )
 
-        gemini_key_override = st.text_input(
-            "Gemini API Key (optional override)",
-            value="",
-            type="password",
-            help="Leave blank to use GEMINI_API_KEY from .env or Streamlit Secrets.",
-        )
-        effective_gemini_key = gemini_key_override.strip() or secret_gemini_key or None
-        effective_gemini_ok = bool(effective_gemini_key or status.gemini_available)
+        # Determine which backend credentials/URLs are active for this mode
+        effective_ollama_host = cfg.ollama_host.rstrip("/")
+        effective_gemini_key: str | None = secret_gemini_key or None
+        effective_openai_url = cfg.openai_compat_base_url.strip()
+        effective_openai_key: str | None = secret_openai_key or cfg.openai_compat_api_key.strip() or None
+        openai_preset_default_model = cfg.openai_compat_model
 
-        ollama_choices = status.ollama_models or [cfg.ollama_model, cfg.ollama_judge_model]
-        gemini_choices = status.gemini_models or [cfg.gemini_model, cfg.gemini_judge_model]
-
-        if execution_mode == "Ollama (Local / Tunnel)":
+        if execution_mode == "Hybrid (Mix Generator & Judge)":
+            col_gp, col_jp = st.columns(2)
+            gen_provider = col_gp.selectbox("Gen Backend", options=["gemini", "ollama", "openai_compatible"], index=0)
+            judge_provider = col_jp.selectbox("Judge Backend", options=["ollama", "gemini", "openai_compatible"], index=0 if default_probe.ollama_available else 1)
+        elif execution_mode == "Ollama (Local / Tunnel)":
             gen_provider = "ollama"
             judge_provider = "ollama"
-            default_gen = ollama_choices.index(cfg.ollama_model) if cfg.ollama_model in ollama_choices else 0
-            default_j = ollama_choices.index(cfg.ollama_judge_model) if cfg.ollama_judge_model in ollama_choices else 0
-            gen_model = st.selectbox("Generator / Agent Model", options=ollama_choices, index=default_gen)
-            judge_model = st.selectbox("Cross-Judge Model", options=ollama_choices, index=default_j)
         elif execution_mode == "Gemini API (Cloud)":
             gen_provider = "gemini"
             judge_provider = "gemini"
-            default_gen = gemini_choices.index(cfg.gemini_model) if cfg.gemini_model in gemini_choices else 0
-            default_j = gemini_choices.index(cfg.gemini_judge_model) if cfg.gemini_judge_model in gemini_choices else 0
-            gen_model = st.selectbox("Generator / Agent Model", options=gemini_choices, index=default_gen)
-            judge_model = st.selectbox("Cross-Judge Model", options=gemini_choices, index=default_j)
         else:
-            col_gp, col_jp = st.columns(2)
-            gen_provider = col_gp.selectbox("Gen Backend", options=["gemini", "ollama"], index=0 if effective_gemini_ok else 1)
-            judge_provider = col_jp.selectbox("Judge Backend", options=["ollama", "gemini"], index=0 if status.ollama_available else 1)
-            gen_pool = gemini_choices if gen_provider == "gemini" else ollama_choices
-            judge_pool = gemini_choices if judge_provider == "gemini" else ollama_choices
-            gen_model = st.selectbox("Generator / Agent Model", options=gen_pool, index=0)
-            judge_model = st.selectbox("Cross-Judge Model", options=judge_pool, index=0)
+            gen_provider = "openai_compatible"
+            judge_provider = "openai_compatible"
+
+        active_providers = {gen_provider, judge_provider}
+
+        if "ollama" in active_providers:
+            ollama_host_val = st.text_input(
+                "Ollama Server / Tunnel URL",
+                value=cfg.ollama_host,
+                key="ollama_host_input",
+                help=(
+                    "Local PC: http://127.0.0.1:11434. On Streamlit Cloud, run: "
+                    "`cloudflared tunnel --url http://127.0.0.1:11434 --http-host-header=\"localhost:11434\"` "
+                    "and paste the https://...trycloudflare.com link here."
+                ),
+            ).strip()
+            effective_ollama_host = ollama_host_val.rstrip("/") or cfg.ollama_host
+
+        if "gemini" in active_providers:
+            gemini_key_override = st.text_input(
+                "Gemini API Key (optional override)",
+                value="",
+                type="password",
+                help="Leave blank to use GEMINI_API_KEY from .env or Streamlit Secrets.",
+            )
+            effective_gemini_key = gemini_key_override.strip() or secret_gemini_key or None
+
+        if "openai_compatible" in active_providers:
+            preset_name = st.selectbox("Provider Preset", options=list(OPENAI_COMPAT_PRESETS.keys()))
+            p_url, p_model, _ = OPENAI_COMPAT_PRESETS[preset_name]
+            if st.session_state.get("prev_oai_preset") != preset_name:
+                st.session_state["oai_base_url_val"] = p_url or cfg.openai_compat_base_url
+                st.session_state["oai_model_val"] = p_model or cfg.openai_compat_model
+                st.session_state["prev_oai_preset"] = preset_name
+            effective_openai_url = st.text_input(
+                "OpenAI-Compatible Base URL",
+                key="oai_base_url_val",
+                placeholder="https://api.groq.com/openai/v1 or http://127.0.0.1:1234/v1",
+            ).strip()
+            oai_key_input = st.text_input(
+                "API Key (leave blank for local LM Studio / vLLM)",
+                value="",
+                type="password",
+                key="oai_api_key_input",
+            ).strip()
+            effective_openai_key = oai_key_input or secret_openai_key or cfg.openai_compat_api_key.strip() or None
+            openai_preset_default_model = st.session_state.get("oai_model_val", p_model or cfg.openai_compat_model)
+
+        status = discover_backends(cfg, ollama_host=effective_ollama_host)
+        ollama_choices = status.ollama_models or [cfg.ollama_model, cfg.ollama_judge_model]
+        gemini_choices = status.gemini_models or [cfg.gemini_model, cfg.gemini_judge_model]
+
+        oai_live_models = (
+            OpenAICompatProvider.list_models(effective_openai_url, effective_openai_key)
+            if ("openai_compatible" in active_providers and effective_openai_url)
+            else []
+        )
+
+        def _pick_model(label: str, prov: str, key_suffix: str, prefer_judge: bool = False) -> str:
+            if prov == "ollama":
+                pref = cfg.ollama_judge_model if prefer_judge else cfg.ollama_model
+                idx = ollama_choices.index(pref) if pref in ollama_choices else 0
+                return st.selectbox(label, options=ollama_choices, index=idx, key=f"mod_{key_suffix}")
+            if prov == "gemini":
+                pref = cfg.gemini_judge_model if prefer_judge else cfg.gemini_model
+                idx = gemini_choices.index(pref) if pref in gemini_choices else 0
+                return st.selectbox(label, options=gemini_choices, index=idx, key=f"mod_{key_suffix}")
+            if oai_live_models:
+                idx = oai_live_models.index(openai_preset_default_model) if openai_preset_default_model in oai_live_models else 0
+                return st.selectbox(label, options=oai_live_models, index=idx, key=f"mod_{key_suffix}")
+            return st.text_input(label, value=openai_preset_default_model, key=f"mod_txt_{key_suffix}").strip()
+
+        gen_model = _pick_model("Generator / Agent Model", gen_provider, "gen", prefer_judge=False)
+        judge_model = _pick_model("Cross-Judge Model", judge_provider, "judge", prefer_judge=True)
 
         st.markdown("---")
-        b1, b2 = st.columns(2)
-        b1.metric("Ollama", "Online" if status.ollama_available else "Offline", f"{len(status.ollama_models)} models")
-        b2.metric("Gemini API", "Configured" if effective_gemini_ok else "No Key", "v1beta" if effective_gemini_ok else "Set key")
-        if not status.ollama_available and not effective_gemini_ok:
-            st.warning(
-                "No LLM backend active. Paste a Gemini API key above, set `GEMINI_API_KEY` in Secrets, "
-                "or paste a public Ollama tunnel URL."
-            )
+        effective_gemini_ok = bool(effective_gemini_key or status.gemini_available)
+        if execution_mode == "OpenAI-Compatible / Other":
+            b1, b2 = st.columns(2)
+            oai_ready = bool(effective_openai_url and gen_model)
+            b1.metric("Endpoint", "Ready" if oai_ready else "Set URL", f"{len(oai_live_models)} listed" if oai_live_models else "Custom/Chat")
+            b2.metric("Ollama", "Online" if status.ollama_available else "Offline", f"{len(status.ollama_models)} models")
+        else:
+            b1, b2 = st.columns(2)
+            b1.metric("Ollama", "Online" if status.ollama_available else "Offline", f"{len(status.ollama_models)} models")
+            b2.metric("Gemini API", "Configured" if effective_gemini_ok else "No Key", "v1beta" if effective_gemini_ok else "Set key")
+
+        if "ollama" in active_providers and not status.ollama_available:
+            st.warning("Ollama is not reachable at that URL. Switch to Gemini / OpenAI-Compatible or paste a valid tunnel URL.")
+        elif "gemini" in active_providers and not effective_gemini_ok:
+            st.warning("Paste a Gemini API key above or set `GEMINI_API_KEY` in Streamlit Secrets.")
+        elif "openai_compatible" in active_providers and not effective_openai_url:
+            st.warning("Enter an OpenAI-Compatible Base URL above.")
 
         with st.expander("Factory Budgets & Optimizer"):
             max_iters = st.slider("Max Critic Iterations", min_value=1, max_value=3, value=3)
@@ -430,6 +493,8 @@ def _render_sidebar(cfg: ForgeSettings) -> dict[str, Any]:
         "judge_model": judge_model,
         "gemini_key_override": effective_gemini_key,
         "ollama_host": effective_ollama_host,
+        "openai_base_url": effective_openai_url or None,
+        "openai_api_key": effective_openai_key,
         "max_iters": max_iters,
         "eval_cases": eval_cases,
         "max_tokens": int(max_tokens),
@@ -531,6 +596,8 @@ def _render_factory_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
                         judge_model_name=sb["judge_model"],
                         gemini_api_key=sb["gemini_key_override"],
                         ollama_host=sb["ollama_host"],
+                        openai_base_url=sb["openai_base_url"],
+                        openai_api_key=sb["openai_api_key"],
                         budget=budget,
                         settings=cfg,
                     )
@@ -565,6 +632,8 @@ def _render_factory_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
                     judge_model_name=sb["judge_model"],
                     gemini_api_key=sb["gemini_key_override"],
                     ollama_host=sb["ollama_host"],
+                    openai_base_url=sb["openai_base_url"],
+                    openai_api_key=sb["openai_api_key"],
                     unattended=True,
                     run_tournament=sb["run_tournament"],
                     max_iterations=sb["max_iters"],
@@ -620,6 +689,8 @@ def _render_factory_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
                         judge_model_name=sb["judge_model"],
                         gemini_api_key=sb["gemini_key_override"],
                         ollama_host=sb["ollama_host"],
+                        openai_base_url=sb["openai_base_url"],
+                        openai_api_key=sb["openai_api_key"],
                         budget=budget,
                         settings=cfg,
                     )
@@ -693,6 +764,8 @@ def _render_factory_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
                         judge_model_name=sb["judge_model"],
                         gemini_api_key=sb["gemini_key_override"],
                         ollama_host=sb["ollama_host"],
+                        openai_base_url=sb["openai_base_url"],
+                        openai_api_key=sb["openai_api_key"],
                         budget=budget,
                         settings=cfg,
                     )
@@ -860,6 +933,8 @@ def _render_chat_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
                     model_name=sb["gen_model"] if use_sidebar else None,
                     gemini_api_key=sb["gemini_key_override"],
                     ollama_host=sb["ollama_host"],
+                    openai_base_url=sb["openai_base_url"],
+                    openai_api_key=sb["openai_api_key"],
                     settings=cfg,
                 )
                 trace = rt.ask(active_query, chat_history=st.session_state[hist_key])
@@ -925,6 +1000,8 @@ def _render_regression_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
                     judge_model_name=sb["judge_model"],
                     gemini_api_key=sb["gemini_key_override"],
                     ollama_host=sb["ollama_host"],
+                    openai_base_url=sb["openai_base_url"],
+                    openai_api_key=sb["openai_api_key"],
                     use_llm_judge=sb["use_llm_judge"],
                     settings=cfg,
                 )

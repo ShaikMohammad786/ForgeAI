@@ -23,7 +23,7 @@ class ForgeSettings(BaseSettings):
         populate_by_name=True,
     )
 
-    provider: Literal["auto", "ollama", "gemini"] = Field(
+    provider: Literal["auto", "ollama", "gemini", "openai_compatible"] = Field(
         default="ollama", alias="FORGEAI_PROVIDER"
     )
 
@@ -44,6 +44,11 @@ class ForgeSettings(BaseSettings):
     gemini_use_interactions: bool = Field(
         default=True, alias="FORGEAI_GEMINI_USE_INTERACTIONS"
     )
+
+    # OpenAI-Compatible (LM Studio, vLLM, llama.cpp, OpenAI, Groq, OpenRouter, HF)
+    openai_compat_base_url: str = Field(default="", alias="FORGEAI_OPENAI_BASE_URL")
+    openai_compat_api_key: str = Field(default="", alias="OPENAI_COMPAT_API_KEY")
+    openai_compat_model: str = Field(default="gpt-4o-mini", alias="FORGEAI_OPENAI_MODEL")
 
     # Embeddings
     embed_model: str = Field(
