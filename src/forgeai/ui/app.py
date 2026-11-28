@@ -305,14 +305,6 @@ def _render_bundle_results(out_dir: Path, *, context: str = "tab1") -> None:
         with st.expander("Human Baseline vs ForgeAI Comparison", expanded=False):
             st.markdown(baseline_md.read_text(encoding="utf-8"))
 
-    reg_demo_md = out_dir / "regression_demo" / "regression_report.md"
-    if reg_demo_md.exists():
-        with st.expander("Committed Regression Audit (v1 vs v2 Docs)", expanded=False):
-            st.markdown(reg_demo_md.read_text(encoding="utf-8"))
-
-    with st.expander("Full Quality Report (`report.md`)", expanded=False):
-        st.markdown(files["report.md"])
-
     # Download bundle artifacts
     st.markdown("#### Download Auditable Artifacts")
     dl_cols = st.columns(4)
