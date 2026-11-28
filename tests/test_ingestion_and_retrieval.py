@@ -121,4 +121,8 @@ def test_extended_document_formats_loading(tmp_path: Path) -> None:
 
     chunks = chunk_corpus(corpus, chunk_size=300, chunk_overlap=40)
     assert len(chunks) >= 8
+    for d in corpus.documents:
+        assert d.summary.num_pages_or_rows >= 1
+        assert len(d.sections) >= 1
+        assert len(d.full_text) >= 1
 

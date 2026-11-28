@@ -30,7 +30,7 @@ from forgeai.factory.pipeline import run_forge_pipeline, save_bundle_artifacts
 from forgeai.factory.regression import run_regression_check
 from forgeai.factory.reporter import build_final_report, render_report_markdown
 from forgeai.ingestion.loader import SUPPORTED_EXTENSIONS, load_corpus
-from forgeai.llm.base import BudgetExceededError, BudgetTracker
+from forgeai.llm.base import BudgetExceededError, BudgetTracker, LLMUnavailableError
 from forgeai.llm.router import build_factory_providers, discover_backends
 from forgeai.runtime.executor import AgentRuntime
 from forgeai.schemas.agent import AgentDefinition
@@ -199,7 +199,7 @@ def _render_sidebar(cfg: ForgeSettings) -> dict[str, Any]:
         execution_mode = st.radio(
             "Execution Mode",
             options=["Ollama (Local)", "Gemini API (Cloud)", "Hybrid (Mix Generator & Judge)"],
-            index=1 if (not status.ollama_available and env_or_secret_gemini) else 0,
+            index=1 if not status.ollama_available else 0,
         )
 
         gemini_key_override = st.text_input(
@@ -241,11 +241,13 @@ def _render_sidebar(cfg: ForgeSettings) -> dict[str, Any]:
         b1, b2 = st.columns(2)
         b1.metric("Ollama", "Online" if status.ollama_available else "Offline", f"{len(status.ollama_models)} models")
         b2.metric("Gemini API", "Configured" if effective_gemini_ok else "No Key", "v1beta" if effective_gemini_ok else "Set key")
+        if not status.ollama_available and not effective_gemini_ok:
+            st.warning("Ollama is offline in cloud. Paste a Gemini API key above or set `GEMINI_API_KEY` in Streamlit Secrets.")
 
         with st.expander("Factory Budgets & Optimizer"):
             max_iters = st.slider("Max Critic Iterations", min_value=1, max_value=3, value=3)
             eval_cases = st.slider("Eval Cases to Generate", min_value=20, max_value=30, value=24)
-            max_tokens = st.number_input("Token Budget Cap", min_value=30_000, max_value=600_000, value=250_000, step=10_000)
+            max_tokens = st.number_input("Token Budget Cap", min_value=30_000, max_value=600_000, value=400_000, step=10_000)
             use_llm_judge = st.checkbox("Hybrid LLM + Deterministic Judge", value=True)
             run_tournament = st.checkbox("Run 3-Prompt Tournament", value=True)
 
@@ -284,17 +286,20 @@ def _render_factory_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
         st.session_state["brief_input"] = hr_brief_path.read_text(encoding="utf-8") if hr_brief_path.exists() else (
             "Build an HR policy assistant for shore staff answering annual leave, sick leave, and domestic travel meal caps, while refusing medical or legal advice."
         )
-        st.session_state["docs_folder_input"] = str((_ROOT_DIR / "demos" / "hr_policy" / "docs").resolve())
+        st.session_state["preset_docs_dir"] = str((_ROOT_DIR / "demos" / "hr_policy" / "docs").resolve())
+        st.session_state["preset_label"] = "Demo 1: Shore HR Policy (`demos/hr_policy/docs`)"
         st.session_state.pop("intake_state", None)
     if pcol2.button("Load Demo 2: Ship Spares Procurement", use_container_width=True):
         st.session_state["brief_input"] = ship_brief_path.read_text(encoding="utf-8") if ship_brief_path.exists() else (
             "Build a ship-spares procurement assistant over our spares catalogue CSV and supplier/freight PDFs for landed cost quotes and lead times."
         )
-        st.session_state["docs_folder_input"] = str((_ROOT_DIR / "demos" / "ship_spares" / "docs").resolve())
+        st.session_state["preset_docs_dir"] = str((_ROOT_DIR / "demos" / "ship_spares" / "docs").resolve())
+        st.session_state["preset_label"] = "Demo 2: Ship Spares (`demos/ship_spares/docs`)"
         st.session_state.pop("intake_state", None)
     if pcol3.button("Clear / Upload Custom Docs", use_container_width=True):
         st.session_state["brief_input"] = ""
-        st.session_state["docs_folder_input"] = ""
+        st.session_state["preset_docs_dir"] = ""
+        st.session_state["preset_label"] = ""
         st.session_state.pop("intake_state", None)
 
     brief = st.text_area(
@@ -304,16 +309,10 @@ def _render_factory_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
         placeholder="Example: Build a maritime procurement assistant over spares_catalogue.csv and SLA PDFs that computes landed costs and refuses speculative ungrounded answers.",
     )
 
-    col_up, col_dir = st.columns(2)
-    uploaded_files = col_up.file_uploader(
-        f"2a. Upload Corpus Documents ({len(UPLOAD_TYPES)} formats: PDF, DOCX, XLSX, CSV, TSV, MD, TXT, JSON/L, YAML, HTML, XML, LOG)",
+    uploaded_files = st.file_uploader(
+        f"2. Upload Corpus Documents ({len(UPLOAD_TYPES)} formats: PDF, DOCX, XLSX, CSV, TSV, MD, TXT, JSON/L, YAML, HTML, XML, LOG)",
         type=UPLOAD_TYPES,
         accept_multiple_files=True,
-    )
-    folder_path = col_dir.text_input(
-        "2b. Or Local Corpus Folder Path",
-        value=st.session_state.get("docs_folder_input", ""),
-        placeholder="e.g. demos/hr_policy/docs",
     )
 
     # Resolve & preview corpus cleanly before building
@@ -324,10 +323,11 @@ def _render_factory_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
             st.session_state["uploaded_dir"] = str(_save_uploaded_files(uploaded_files, "forgeai_docs_"))
             st.session_state["uploaded_sig"] = sig
         docs_dir = Path(st.session_state["uploaded_dir"])
-    elif folder_path.strip():
-        cand = Path(folder_path.strip())
+    elif st.session_state.get("preset_docs_dir"):
+        cand = Path(st.session_state["preset_docs_dir"])
         if cand.exists() and cand.is_dir():
             docs_dir = cand.resolve()
+            st.caption(f"Loaded corpus preset: {st.session_state.get('preset_label', cand.name)} (upload files above to override)")
 
     if docs_dir is not None:
         try:
@@ -337,8 +337,9 @@ def _render_factory_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
                     {
                         "Filename": d.summary.filename,
                         "Type": d.summary.doc_type.upper(),
-                        "Sections": d.summary.num_sections,
-                        "Characters": d.summary.total_chars,
+                        "Pages / Rows": d.summary.num_pages_or_rows,
+                        "Sections": len(d.sections),
+                        "Characters": len(d.full_text),
                         "Key Headings / Schema": ", ".join(d.summary.key_headings[:3]) or "-",
                     }
                     for d in preview_corpus.documents
@@ -346,7 +347,7 @@ def _render_factory_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
                 with st.expander(f"Corpus Inventory Preview ({len(inv_rows)} files loaded)", expanded=True):
                     st.dataframe(pd.DataFrame(inv_rows), use_container_width=True, hide_index=True)
             else:
-                st.warning("The specified folder contains no supported files.")
+                st.warning("No supported files found in this corpus.")
                 docs_dir = None
         except Exception as exc:
             st.error(f"Could not inspect corpus: {exc}")
@@ -359,60 +360,72 @@ def _render_factory_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
     # Interactive path
     if start_interactive:
         if not brief.strip() or docs_dir is None:
-            st.error("Provide both a brief and a valid document folder or uploaded files.")
+            st.error("Provide both a brief and uploaded documents (or click a Load Demo button).")
         else:
-            with st.spinner("Generating <=5 clarifying questions from brief and corpus..."):
-                corpus = load_corpus(docs_dir)
-                budget = BudgetTracker(max_tokens=sb["max_tokens"], max_seconds=cfg.max_seconds_budget)
-                factory_llm, judge_llm = build_factory_providers(
+            try:
+                with st.spinner("Generating <=5 clarifying questions from brief and corpus..."):
+                    corpus = load_corpus(docs_dir)
+                    budget = BudgetTracker(max_tokens=sb["max_tokens"], max_seconds=cfg.max_seconds_budget)
+                    factory_llm, _ = build_factory_providers(
+                        provider=sb["gen_provider"],
+                        model_name=sb["gen_model"],
+                        judge_provider=sb["judge_provider"],
+                        judge_model_name=sb["judge_model"],
+                        gemini_api_key=sb["gemini_key_override"],
+                        budget=budget,
+                        settings=cfg,
+                    )
+                    questions = generate_clarifying_questions(brief, corpus, factory_llm, max_questions=5)
+                    st.session_state["intake_state"] = {
+                        "brief": brief,
+                        "docs_dir": str(docs_dir),
+                        "questions": [q.model_dump() for q in questions],
+                        "requirements": None,
+                    }
+            except LLMUnavailableError as exc:
+                st.error(f"LLM Backend Not Ready: {exc} Paste your Gemini API key in the sidebar or set `GEMINI_API_KEY` in Streamlit Secrets.")
+            except Exception as exc:
+                st.error(f"Intake step failed: {exc}")
+
+    # Unattended 1-click path
+    if run_unattended:
+        if not brief.strip() or docs_dir is None:
+            st.error("Provide both a brief and uploaded documents (or click a Load Demo button).")
+        else:
+            run_id = f"build_{datetime.now(timezone.utc).strftime('%H%M%S')}_{uuid.uuid4().hex[:4]}"
+            out_dir = _ROOT_DIR / ".forgeai_ui_builds" / run_id
+            prog = st.progress(0.05, text="Starting ForgeAI Factory...")
+            try:
+                result = run_forge_pipeline(
+                    brief=brief,
+                    docs_dir=docs_dir,
+                    out_dir=out_dir,
                     provider=sb["gen_provider"],
                     model_name=sb["gen_model"],
                     judge_provider=sb["judge_provider"],
                     judge_model_name=sb["judge_model"],
                     gemini_api_key=sb["gemini_key_override"],
-                    budget=budget,
+                    unattended=True,
+                    run_tournament=sb["run_tournament"],
+                    max_iterations=sb["max_iters"],
+                    max_tokens_budget=sb["max_tokens"],
+                    eval_target_cases=sb["eval_cases"],
+                    use_llm_judge=sb["use_llm_judge"],
+                    progress_callback=lambda msg, pct: prog.progress(min(max(pct, 0.0), 1.0), text=msg),
                     settings=cfg,
                 )
-                questions = generate_clarifying_questions(brief, corpus, factory_llm, max_questions=5)
-                st.session_state["intake_state"] = {
-                    "brief": brief,
-                    "docs_dir": str(docs_dir),
-                    "questions": [q.model_dump() for q in questions],
-                    "requirements": None,
-                }
-
-    # Unattended 1-click path
-    if run_unattended:
-        if not brief.strip() or docs_dir is None:
-            st.error("Provide both a brief and a valid document folder or uploaded files.")
-        else:
-            run_id = f"build_{datetime.now(timezone.utc).strftime('%H%M%S')}_{uuid.uuid4().hex[:4]}"
-            out_dir = _ROOT_DIR / ".forgeai_ui_builds" / run_id
-            prog = st.progress(0.05, text="Starting ForgeAI Factory...")
-            result = run_forge_pipeline(
-                brief=brief,
-                docs_dir=docs_dir,
-                out_dir=out_dir,
-                provider=sb["gen_provider"],
-                model_name=sb["gen_model"],
-                judge_provider=sb["judge_provider"],
-                judge_model_name=sb["judge_model"],
-                gemini_api_key=sb["gemini_key_override"],
-                unattended=True,
-                run_tournament=sb["run_tournament"],
-                max_iterations=sb["max_iters"],
-                max_tokens_budget=sb["max_tokens"],
-                eval_target_cases=sb["eval_cases"],
-                use_llm_judge=sb["use_llm_judge"],
-                progress_callback=lambda msg, pct: prog.progress(min(max(pct, 0.0), 1.0), text=msg),
-                settings=cfg,
-            )
-            st.session_state["last_build_dir"] = str(out_dir)
-            if result.halted_ungroundable:
-                st.error("ForgeAI Groundability Guard HALTED build: corpus cannot support this brief without hallucination.")
-                st.markdown((out_dir / "report.md").read_text(encoding="utf-8"))
-            else:
-                st.success(f"Factory build completed! Bundle saved to `{out_dir.relative_to(_ROOT_DIR).as_posix()}`.")
+                st.session_state["last_build_dir"] = str(out_dir)
+                if result.halted_ungroundable:
+                    st.error("ForgeAI Groundability Guard HALTED build: corpus cannot support this brief without hallucination.")
+                    st.markdown((out_dir / "report.md").read_text(encoding="utf-8"))
+                else:
+                    st.success(f"Factory build completed! Bundle saved to `{out_dir.relative_to(_ROOT_DIR).as_posix()}`.")
+            except LLMUnavailableError as exc:
+                prog.empty()
+                st.error(f"LLM Backend Not Ready: {exc} Paste your Gemini API key in the sidebar or set `GEMINI_API_KEY` in Streamlit Secrets.")
+            except Exception as exc:
+                prog.empty()
+                st.error(f"Factory build failed: {exc}")
 
     # Interactive Step 2 dialogue + Requirements Checkpoint
     intake = st.session_state.get("intake_state")
@@ -436,26 +449,31 @@ def _render_factory_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
             synth_clicked = st.form_submit_button("Synthesize Requirements & Run Groundability Guard")
 
         if synth_clicked:
-            with st.spinner("Running Groundability Guard & Requirements Synthesis..."):
-                corpus = load_corpus(Path(intake["docs_dir"]))
-                budget = BudgetTracker(max_tokens=sb["max_tokens"], max_seconds=cfg.max_seconds_budget)
-                factory_llm, _ = build_factory_providers(
-                    provider=sb["gen_provider"],
-                    model_name=sb["gen_model"],
-                    judge_provider=sb["judge_provider"],
-                    judge_model_name=sb["judge_model"],
-                    gemini_api_key=sb["gemini_key_override"],
-                    budget=budget,
-                    settings=cfg,
-                )
-                req = run_intake_interview(
-                    intake["brief"],
-                    corpus,
-                    factory_llm,
-                    embed_model_name=cfg.embed_model,
-                    pre_supplied_answers=answers,
-                )
-                intake["requirements"] = req.model_dump(mode="json")
+            try:
+                with st.spinner("Running Groundability Guard & Requirements Synthesis..."):
+                    corpus = load_corpus(Path(intake["docs_dir"]))
+                    budget = BudgetTracker(max_tokens=sb["max_tokens"], max_seconds=cfg.max_seconds_budget)
+                    factory_llm, _ = build_factory_providers(
+                        provider=sb["gen_provider"],
+                        model_name=sb["gen_model"],
+                        judge_provider=sb["judge_provider"],
+                        judge_model_name=sb["judge_model"],
+                        gemini_api_key=sb["gemini_key_override"],
+                        budget=budget,
+                        settings=cfg,
+                    )
+                    req = run_intake_interview(
+                        intake["brief"],
+                        corpus,
+                        factory_llm,
+                        embed_model_name=cfg.embed_model,
+                        pre_supplied_answers=answers,
+                    )
+                    intake["requirements"] = req.model_dump(mode="json")
+            except LLMUnavailableError as exc:
+                st.error(f"LLM Backend Not Ready: {exc} Paste your Gemini API key in the sidebar or set `GEMINI_API_KEY` in Streamlit Secrets.")
+            except Exception as exc:
+                st.error(f"Requirements synthesis failed: {exc}")
 
         if intake.get("requirements"):
             req = RequirementsDoc.model_validate(intake["requirements"])
@@ -504,62 +522,69 @@ def _render_factory_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
                 run_id = f"build_{datetime.now(timezone.utc).strftime('%H%M%S')}_{uuid.uuid4().hex[:4]}"
                 out_dir = _ROOT_DIR / ".forgeai_ui_builds" / run_id
                 prog = st.progress(0.10, text="Synthesizing Agent Definition & Custom Macros...")
-                corpus = load_corpus(Path(intake["docs_dir"]))
-                budget = BudgetTracker(max_tokens=sb["max_tokens"], max_seconds=cfg.max_seconds_budget)
-                factory_llm, judge_llm = build_factory_providers(
-                    provider=sb["gen_provider"],
-                    model_name=sb["gen_model"],
-                    judge_provider=sb["judge_provider"],
-                    judge_model_name=sb["judge_model"],
-                    gemini_api_key=sb["gemini_key_override"],
-                    budget=budget,
-                    settings=cfg,
-                )
-                base_agent, candidates = generate_agent_candidates(
-                    req,
-                    corpus,
-                    factory_llm,
-                    judge_model_name=judge_llm.model_name,
-                    num_candidates=3 if sb["run_tournament"] else 1,
-                )
-                prog.progress(0.35, text="Generating >=20 grounded evaluation cases...")
-                eval_set = generate_eval_set(req, base_agent, corpus, factory_llm, target_cases=sb["eval_cases"])
-                rt = AgentRuntime(base_agent, factory_llm, corpus=corpus, embed_model_name=cfg.embed_model)
-                if sb["run_tournament"] and len(candidates) > 1:
-                    prog.progress(0.55, text="Running position-debiased Prompt Tournament...")
-                    try:
-                        base_agent, candidates = run_prompt_tournament(base_agent, candidates, eval_set.cases, rt, judge_llm)
-                    except BudgetExceededError as exc:
-                        budget.stopped_early_reason = str(exc)
+                try:
+                    corpus = load_corpus(Path(intake["docs_dir"]))
+                    budget = BudgetTracker(max_tokens=sb["max_tokens"], max_seconds=cfg.max_seconds_budget)
+                    factory_llm, judge_llm = build_factory_providers(
+                        provider=sb["gen_provider"],
+                        model_name=sb["gen_model"],
+                        judge_provider=sb["judge_provider"],
+                        judge_model_name=sb["judge_model"],
+                        gemini_api_key=sb["gemini_key_override"],
+                        budget=budget,
+                        settings=cfg,
+                    )
+                    base_agent, candidates = generate_agent_candidates(
+                        req,
+                        corpus,
+                        factory_llm,
+                        judge_model_name=judge_llm.model_name,
+                        num_candidates=3 if sb["run_tournament"] else 1,
+                    )
+                    prog.progress(0.35, text="Generating >=20 grounded evaluation cases...")
+                    eval_set = generate_eval_set(req, base_agent, corpus, factory_llm, target_cases=sb["eval_cases"])
+                    rt = AgentRuntime(base_agent, factory_llm, corpus=corpus, embed_model_name=cfg.embed_model)
+                    if sb["run_tournament"] and len(candidates) > 1:
+                        prog.progress(0.55, text="Running position-debiased Prompt Tournament...")
+                        try:
+                            base_agent, candidates = run_prompt_tournament(base_agent, candidates, eval_set.cases, rt, judge_llm)
+                        except BudgetExceededError as exc:
+                            budget.stopped_early_reason = str(exc)
 
-                prog.progress(0.75, text="Running Critic-Optimizer Loop...")
-                final_agent, scorecards, iterations = run_optimization_loop(
-                    base_agent,
-                    eval_set.cases,
-                    rt,
-                    factory_llm,
-                    judge_llm,
-                    budget,
-                    max_iterations=sb["max_iters"],
-                    min_gain_threshold=cfg.min_gain_threshold,
-                    use_llm_judge=sb["use_llm_judge"],
-                )
-                report = build_final_report(final_agent, req, scorecards, iterations, candidates, budget)
-                save_bundle_artifacts(
-                    out_dir,
-                    corpus=corpus,
-                    requirements=req,
-                    agent=final_agent,
-                    eval_set=eval_set,
-                    scorecards=scorecards,
-                    iterations=iterations,
-                    candidates=candidates,
-                    report=report,
-                )
-                prog.progress(1.0, text="Completed!")
-                st.session_state["last_build_dir"] = str(out_dir)
-                st.session_state.pop("intake_state", None)
-                st.success(f"Build finished! Bundle saved to `{out_dir.relative_to(_ROOT_DIR).as_posix()}`.")
+                    prog.progress(0.75, text="Running Critic-Optimizer Loop...")
+                    final_agent, scorecards, iterations = run_optimization_loop(
+                        base_agent,
+                        eval_set.cases,
+                        rt,
+                        factory_llm,
+                        judge_llm,
+                        budget,
+                        max_iterations=sb["max_iters"],
+                        min_gain_threshold=cfg.min_gain_threshold,
+                        use_llm_judge=sb["use_llm_judge"],
+                    )
+                    report = build_final_report(final_agent, req, scorecards, iterations, candidates, budget)
+                    save_bundle_artifacts(
+                        out_dir,
+                        corpus=corpus,
+                        requirements=req,
+                        agent=final_agent,
+                        eval_set=eval_set,
+                        scorecards=scorecards,
+                        iterations=iterations,
+                        candidates=candidates,
+                        report=report,
+                    )
+                    prog.progress(1.0, text="Completed!")
+                    st.session_state["last_build_dir"] = str(out_dir)
+                    st.session_state.pop("intake_state", None)
+                    st.success(f"Build finished! Bundle saved to `{out_dir.relative_to(_ROOT_DIR).as_posix()}`.")
+                except LLMUnavailableError as exc:
+                    prog.empty()
+                    st.error(f"LLM Backend Not Ready: {exc} Paste your Gemini API key in the sidebar or set `GEMINI_API_KEY` in Streamlit Secrets.")
+                except Exception as exc:
+                    prog.empty()
+                    st.error(f"Agent generation failed: {exc}")
 
     if st.session_state.get("last_build_dir"):
         bdir = Path(st.session_state["last_build_dir"])
@@ -664,45 +689,53 @@ def _render_chat_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
     active_query = queued_prompt or user_q
 
     if active_query:
-        st.session_state[hist_key].append({"role": "user", "content": active_query})
-        with st.spinner("Retrieving context and executing tools..."):
-            use_sidebar = ov_choice == "Sidebar Selected Engine"
-            rt = AgentRuntime.from_directory(
-                bundle_dir,
-                provider=sb["gen_provider"] if use_sidebar else None,
-                model_name=sb["gen_model"] if use_sidebar else None,
-                gemini_api_key=sb["gemini_key_override"],
-                settings=cfg,
-            )
-            trace = rt.ask(active_query, chat_history=st.session_state[hist_key][:-1])
-            resp = trace.response
+        try:
+            with st.spinner("Retrieving context and executing tools..."):
+                use_sidebar = ov_choice == "Sidebar Selected Engine"
+                rt = AgentRuntime.from_directory(
+                    bundle_dir,
+                    provider=sb["gen_provider"] if use_sidebar else None,
+                    model_name=sb["gen_model"] if use_sidebar else None,
+                    gemini_api_key=sb["gemini_key_override"],
+                    settings=cfg,
+                )
+                trace = rt.ask(active_query, chat_history=st.session_state[hist_key])
+                resp = trace.response
 
-        st.session_state[hist_key].append(
-            {
-                "role": "assistant",
-                "content": resp.answer,
-                "meta": {
-                    "refused": resp.refused,
-                    "confidence": resp.confidence,
-                    "latency_ms": trace.latency_ms,
-                    "tools_used": resp.tools_used,
-                    "citations": resp.citations,
-                    "tool_outputs": trace.tool_outputs,
-                    "chunks": [
-                        {
-                            "source": h.chunk.source,
-                            "location": h.chunk.page_or_row,
-                            "score": h.combined_score,
-                            "bm25": h.bm25_score,
-                            "dense": h.dense_score,
-                            "text": h.chunk.text,
-                        }
-                        for h in trace.retrieved_chunks
-                    ],
-                },
-            }
-        )
-        st.rerun()
+            st.session_state[hist_key].append({"role": "user", "content": active_query})
+            st.session_state[hist_key].append(
+                {
+                    "role": "assistant",
+                    "content": resp.answer,
+                    "meta": {
+                        "refused": resp.refused,
+                        "confidence": resp.confidence,
+                        "latency_ms": trace.latency_ms,
+                        "tools_used": resp.tools_used,
+                        "citations": resp.citations,
+                        "tool_outputs": trace.tool_outputs,
+                        "chunks": [
+                            {
+                                "source": h.chunk.source,
+                                "location": h.chunk.page_or_row,
+                                "score": h.combined_score,
+                                "bm25": h.bm25_score,
+                                "dense": h.dense_score,
+                                "text": h.chunk.text,
+                            }
+                            for h in trace.retrieved_chunks
+                        ],
+                    },
+                }
+            )
+            st.rerun()
+        except LLMUnavailableError as exc:
+            st.error(
+                f"LLM Backend Not Ready: {exc} Paste a Gemini API key in the sidebar (left) "
+                "or set `GEMINI_API_KEY` in Streamlit Cloud -> App Settings -> Secrets."
+            )
+        except Exception as exc:
+            st.error(f"Chat inference failed: {exc}")
 
 
 def _render_regression_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
@@ -721,45 +754,43 @@ def _render_regression_tab(cfg: ForgeSettings, sb: dict[str, Any]) -> None:
     sel_label = st.selectbox("Baseline Agent Bundle", options=list(bundles.keys()), key="reg_bundle_select")
     sel_dir = bundles[sel_label]
 
-    col_u, col_p = st.columns(2)
-    reg_uploads = col_u.file_uploader(
-        "Upload Updated Documents Folder Contents",
+    reg_uploads = st.file_uploader(
+        "Upload Updated Documents",
         type=UPLOAD_TYPES,
         accept_multiple_files=True,
         key="reg_uploader",
     )
-    reg_folder = col_p.text_input(
-        "Or Updated Corpus Folder Path",
-        value="",
-        placeholder="e.g. demos/hr_policy/docs_v2",
-        key="reg_folder_input",
-    )
 
     if st.button("Run Regression Audit", type="primary"):
-        reg_docs: Path | None = None
-        if reg_uploads:
-            reg_docs = _save_uploaded_files(reg_uploads, "forgeai_reg_")
-        elif reg_folder.strip() and Path(reg_folder.strip()).is_dir():
-            reg_docs = Path(reg_folder.strip()).resolve()
-
-        if reg_docs is None:
-            st.error("Upload updated documents or enter a valid folder path.")
+        if not reg_uploads:
+            st.error("Upload updated documents first.")
             return
+        reg_docs = _save_uploaded_files(reg_uploads, "forgeai_reg_")
 
         reg_out = _ROOT_DIR / ".forgeai_ui_builds" / f"reg_{uuid.uuid4().hex[:6]}"
-        with st.spinner("Re-indexing updated corpus, auditing groundability, and re-scoring eval cases..."):
-            diff, _ = run_regression_check(
-                agent_dir=sel_dir,
-                new_docs_dir=reg_docs,
-                out_dir=reg_out,
-                provider=sb["gen_provider"],
-                model_name=sb["gen_model"],
-                judge_provider=sb["judge_provider"],
-                judge_model_name=sb["judge_model"],
-                gemini_api_key=sb["gemini_key_override"],
-                use_llm_judge=sb["use_llm_judge"],
-                settings=cfg,
+        try:
+            with st.spinner("Re-indexing updated corpus, auditing groundability, and re-scoring eval cases..."):
+                diff, _ = run_regression_check(
+                    agent_dir=sel_dir,
+                    new_docs_dir=reg_docs,
+                    out_dir=reg_out,
+                    provider=sb["gen_provider"],
+                    model_name=sb["gen_model"],
+                    judge_provider=sb["judge_provider"],
+                    judge_model_name=sb["judge_model"],
+                    gemini_api_key=sb["gemini_key_override"],
+                    use_llm_judge=sb["use_llm_judge"],
+                    settings=cfg,
+                )
+        except LLMUnavailableError as exc:
+            st.error(
+                f"LLM Backend Not Ready: {exc} Paste a Gemini API key in the sidebar (left) "
+                "or set `GEMINI_API_KEY` in Streamlit Secrets."
             )
+            return
+        except Exception as exc:
+            st.error(f"Regression audit failed: {exc}")
+            return
 
         delta_pp = round((diff.new_pass_rate - diff.old_pass_rate) * 100, 1)
         m1, m2, m3, m4 = st.columns(4)
