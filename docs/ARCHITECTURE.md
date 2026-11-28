@@ -1,14 +1,14 @@
 # ForgeAI Architecture Blueprint
 
-ForgeAI is an autonomous **Agent Factory** designed to operate reliably even when every reasoning step runs on a small, imperfect open model (e.g., `qwen2.5:1.5b` / `qwen2.5:3b` via local Ollama) while seamlessly supporting **Google Gemini (Interactions API)** from `.env` or UI selection.
+ForgeAI is an autonomous **Agent Factory** designed to operate reliably even when every reasoning step runs on a small, imperfect open model (e.g., `qwen2.5:1.5b` / `qwen2.5:3b` via local or tunneled Ollama) while seamlessly supporting **Google Gemini (Interactions API)** and **any OpenAI-Compatible provider** (Groq, OpenAI, OpenRouter, Hugging Face Inference, Together AI, LM Studio, vLLM, llama.cpp).
 
 ## 1. End-to-End Architecture Flowchart (Simple View)
 
 ```mermaid
 flowchart TD
-    START(["User Input: 1-Paragraph Brief + Docs Folder"]) --> LLM["Model Router (.env or UI Selector)\nLocal Ollama (qwen2.5:3b / 1.5b)\nOR Gemini Interactions API"]
-    START --> ING["1. Document Ingestion & Manifest\nPDF, CSV, Markdown, TXT, JSON + SHA-256 Hashes"]
-    ING --> IDX["2. Chunker & Hybrid Search Index\nHeading/Row Chunks + BM25 + FastEmbed BGE-Small"]
+    START(["User Input: 1-Paragraph Brief + Docs Folder"]) --> LLM["4-Mode Model Router (.env or UI Selector)\nOllama (Local / Tunnel) | Gemini Interactions API\nOpenAI-Compatible (Groq/OpenAI/HF/LM Studio) | Hybrid"]
+    START --> ING["1. Document Ingestion & Manifest\n17 Formats (PDF, DOCX, XLSX, CSV, TSV, JSON/L, YAML, MD, XML) + SHA-256"]
+    ING --> IDX["2. Chunker & Hybrid Search Index\nHeading/Tabular Chunks + BM25 + BGE-Small + Query Decomposition"]
 
     IDX --> INT["3. Intake Interviewer\nAsks <=5 Clarifying Questions (Interactive or Auto)"]
     INT --> GRD["4. Groundability Guard\nMatches Brief Topics vs Document Evidence"]
@@ -17,8 +17,8 @@ flowchart TD
     GCHECK -- "0% Grounded" --> HALT["STOP Safely & Report Gaps\nRefuses to Build Hallucinating Agent"]
     GCHECK -- "Grounded or Partial\n(Unsupported -> Must-Refuse)" --> CHK{"5. Human Checkpoint\nApprove / Edit Requirements\n(Auto in --unattended)"}
 
-    CHK -- "Approved" --> TOOLGATE["6. Tool Pruning Gate (4 Tools)\ncsv_lookup | calculator | open_meteo_weather | current_date\nBlocks Unneeded Tools (e.g., No Weather for HR)"]
-    TOOLGATE --> GEN["7. Agent Generator\nCreates Declarative YAML + 3 Prompt Variants\n+ Retrieval Config + JSON Output Contract"]
+    CHK -- "Approved" --> TOOLGATE["6. Hybrid Tool Gate (10 Standard Tools + AST Custom Macros)\ncsv_lookup | json_record_lookup | calculator | statistics_calculator | unit_converter\ncurrency_converter | open_meteo_weather | http_public_country_info | text_stats_and_regex | current_date"]
+    TOOLGATE --> GEN["7. Agent Generator\nCreates Declarative YAML + AST Macros + 3 Prompt Variants\n+ Retrieval Config + JSON Output Contract"]
 
     GEN --> EVALGEN["8. Auto Eval Generator\nCreates >=20 Verified Cases from Docs\n(Answerable + Out-of-Scope + Multi-Doc Edge Cases)"]
     EVALGEN --> TOURN["9. Prompt Tournament\nTests 3 Prompt Variants with Position-Swapped\nPairwise Judge (A vs B and B vs A) -> Picks Winner"]
@@ -33,7 +33,7 @@ flowchart TD
 
     LOOP -- "Done / Budget Stop" --> REPORT["12. Ship Artifact Bundle + Honest Report\nagent_definition.yaml | eval_set.json | scorecard.md\niteration_log.md | report.md (What Still Fails & Why)"]
 
-    REPORT --> RUN["13. Generic Runnable Agent\nCLI (forgeai chat) & Streamlit Web UI\nLoads Any Agent -> Hybrid RAG -> Safe Tools -> JSON Output"]
+    REPORT --> RUN["13. Generic Runnable Agent\nCLI (forgeai chat), 4-Tab Streamlit UI, & Optional FastAPI\nLoads Any Agent -> Hybrid RAG -> Safe Tools & Macros -> JSON"]
     REPORT --> REG["14. Regression Mode (forgeai regress)\nDocs Change -> Diff SHA-256 -> Re-run Old Evals -> Breakage Report"]
     REPORT --> BASE["15. Human Baseline Benchmark\nHand-Written Agent vs ForgeAI on Same Evals"]
 ```
@@ -44,10 +44,10 @@ Small local models (`1.5B–3B`) fail in predictable ways: broken JSON, overly e
 
 1. **JSON Repair & Schema Coercion (`llm/base.py`)**: Every structured call validates against Pydantic v2, retries with explicit schema error feedback, extracts fenced/substring JSON blocks, and applies deterministic defaults on non-critical fields.
 2. **Evidence-First Groundability Guard (`factory/groundability.py`)**: Before any agent is generated, the factory extracts atomic capabilities/claims from the brief and queries the actual document index (BM25 + Dense vector similarity + CSV column schema inspection). Any claim with zero supporting evidence is marked `UNSUPPORTED` and automatically added to `must_refuse_topics` with an explicit gap warning—preventing the factory from generating prompts that invite fabrication.
-3. **Deterministic + LLM Tool Pruning (`tools/registry.py`, `factory/generator.py`)**:
-   - Seven sandboxed tools exist: `csv_lookup`, `json_record_lookup`, `calculator`, `unit_converter`, `currency_converter`, `open_meteo_weather`, and `current_date`.
-   - Deterministic capability gates block impossible tools first (e.g., `csv_lookup` cannot attach if zero `.csv` files exist; `json_record_lookup` requires `.json` files; `open_meteo_weather`, `currency_converter`, and `unit_converter` require explicit domain intent).
-   - The LLM selector only chooses from eligible tools and must justify each with a brief quote; post-checks strip any unjustified attachment.
+3. **Deterministic + LLM Tool Pruning + AST Custom Macros (`tools/registry.py`, `tools/custom_macro.py`)**:
+   - Ten sandboxed standard tools exist: `csv_lookup` (CSV/TSV/XLSX), `json_record_lookup` (JSON/JSONL/YAML), `calculator`, `statistics_calculator`, `unit_converter`, `currency_converter`, `open_meteo_weather`, `http_public_country_info`, `text_stats_and_regex`, and `current_date`.
+   - Deterministic capability gates strip explicit refusal phrases first, then block impossible/off-domain tools (`csv_lookup` requires `.csv`/`.tsv`/`.xlsx`, weather/FX/country/stats/text-audit require domain intent).
+   - Up to 2 declarative `CustomToolSpec` macros (`formula` or `tabular_filter`) can be synthesized per brief/corpus and verified solely via Python `ast` allowlists (zero `exec()`).
 4. **Hybrid Retrieval with Score Gating (`retrieval/hybrid.py`)**:
    - Heading/paragraph-aware chunking for PDFs/Markdown/TXT plus structured row-summary + schema chunking for CSVs.
    - Reciprocal Rank Fusion (RRF) combining `BM25Okapi` (exact SKU/policy-code precision) and `FastEmbed` `BAAI/bge-small-en-v1.5` (semantic recall on CPU ONNX, saving GPU VRAM for Ollama).
@@ -70,9 +70,10 @@ Small local models (`1.5B–3B`) fail in predictable ways: broken JSON, overly e
 
 | Mode | Configuration | Use Case |
 | :--- | :--- | :--- |
-| **Local Ollama** | `OLLAMA_HOST=http://127.0.0.1:11434`, `qwen2.5:3b` / `qwen2.5:1.5b` | Offline, zero API cost, small open model evaluation |
-| **Gemini API (Interactions API)** | `GEMINI_API_KEY=...` in `.env`, `client.interactions.create(...)` | Fast cloud validation & cross-model judging via `google-genai` |
-| **Auto / Hybrid** | Select provider independently for Factory/Agent vs Judge in CLI or Streamlit UI | Eliminates judge self-preference bias |
+| **Ollama (Local or Tunneled)** | `OLLAMA_HOST=http://127.0.0.1:11434` (or UI Cloudflare/ngrok Tunnel URL) | Offline GPU inference locally, or bring-your-own local GPU to Streamlit Cloud |
+| **Gemini API (Interactions API)** | `GEMINI_API_KEY=...` in `.env` or Secrets, `client.interactions.create(...)` | Fast cloud inference & cross-model judging via `google-genai` |
+| **OpenAI-Compatible / Other** | `Base URL` + optional `API Key` + `Model` in sidebar or `.env` | Groq, OpenAI, OpenRouter, Hugging Face, Together, LM Studio, vLLM, llama.cpp |
+| **Hybrid Mix** | Pick Generator backend & Judge backend independently in CLI or Streamlit UI | Eliminates judge self-preference bias across local & cloud models |
 
 ## 4. Artifact Bundle Layout
 
@@ -106,7 +107,7 @@ Every factory run writes a self-contained runnable bundle:
    - Compiled and verified exclusively through Python `ast` allowlists (`tools/custom_macro.py`, zero `eval()` / `exec()`), rejecting arbitrary calls or undeclared identifiers.
 
 ### Optional FastAPI REST API (`forgeai serve`) & Zero-Server Streamlit UI (`forgeai ui`)
-- **Streamlit UI (`src/forgeai/ui/app.py`)** directly imports `forgeai` modules with **no separate backend server needed** (deployable straight to Streamlit Community Cloud or Hugging Face Spaces), providing `Ollama`, `Gemini API`, and `Hybrid` execution modes.
+- **Streamlit UI (`src/forgeai/ui/app.py`)** directly imports `forgeai` modules with **no separate backend server needed** (deployable straight to Streamlit Community Cloud or Hugging Face Spaces), offering a 4-tab layout (Factory, Chat Runner & Evidence Trace, Regression Mode, Reports & Results) and 4 execution modes (`Ollama Local/Tunnel`, `Gemini API`, `OpenAI-Compatible / Other`, `Hybrid`).
 - **FastAPI Backend (`src/forgeai/api/server.py`)** optionally exposes `/health`, `/models`, `/agents`, `/build`, `/chat`, and `/regress` for programmatic microservice integration.
 
 ### Latest Verified End-to-End Benchmarks (`qwen2.5:3b` + `qwen2.5:1.5b` CUDA)
