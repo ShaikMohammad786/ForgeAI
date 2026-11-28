@@ -92,3 +92,66 @@ def test_pipeline_and_regression_mode(monkeypatch, tmp_path: Path) -> None:
     assert diff.modified_files == ["hr.md"]
     assert len(diff.now_ungroundable) >= 1
     assert (reg_out / "regression_report.md").exists()
+
+
+def test_runtime_executes_declarative_custom_macro_end_to_end(monkeypatch, tmp_path: Path) -> None:
+    from forgeai.schemas.agent import AgentDefinition, CustomToolSpec, RetrievalConfig
+
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    (docs_dir / "pricing.md").write_text(
+        "# Bulk Order Rule\nBulk orders get a discount percentage off unit price plus shipping.\n",
+        encoding="utf-8",
+    )
+
+    class _MacroRuntimeLLM(LLMProvider):
+        provider_name = "ollama"
+
+        def complete(self, messages, *, temperature=0.1, max_tokens=1200, json_mode=False, json_schema=None):
+            last = messages[-1]["content"]
+            if "TOOL OBSERVATION (calc_bulk_quote):" in last:
+                out = {
+                    "action": "final",
+                    "answer": "The bulk quote total is USD 980 based on pricing.md.",
+                    "citations": [{"source": "pricing.md", "excerpt": "Bulk orders get a discount percentage"}],
+                    "refused": False,
+                    "confidence": "high",
+                    "tools_used": ["calc_bulk_quote"],
+                }
+            else:
+                out = {
+                    "action": "tool_call",
+                    "tool": "calc_bulk_quote",
+                    "args": {"unit_price": 100, "qty": 10, "discount_pct": 10, "shipping": 80},
+                }
+            return LLMResponse(text=json.dumps(out), model="dummy", provider="ollama", prompt_tokens=15, completion_tokens=15, total_tokens=30)
+
+    agent = AgentDefinition(
+        agent_id="macro-test",
+        name="Macro Runtime Agent",
+        brief="Calculate bulk order quotes",
+        provider="ollama",
+        model_name="dummy",
+        judge_model_name="dummy",
+        system_prompt="Use calc_bulk_quote when asked for bulk quotes.",
+        retrieval=RetrievalConfig(top_k=3, min_score_threshold=0.0),
+        custom_tools=[
+            CustomToolSpec(
+                name="calc_bulk_quote",
+                description="Calculate bulk order landed quote.",
+                tool_type="formula",
+                parameters=["unit_price", "qty", "discount_pct", "shipping"],
+                expression="unit_price * qty * (1 - discount_pct / 100) + shipping",
+                source_document="pricing.md",
+            )
+        ],
+        docs_dir=str(docs_dir),
+        created_at="2026-11-28T00:00:00Z",
+    )
+
+    rt = AgentRuntime(agent, _MacroRuntimeLLM("dummy"), docs_dir_override=docs_dir)
+    trace = rt.ask("What is the bulk quote for 10 units at 100 USD each with 10% discount and 80 USD shipping?")
+    assert not trace.response.refused
+    assert "calc_bulk_quote" in trace.response.tools_used
+    assert any(t["tool"] == "calc_bulk_quote" and "980" in t["output"] for t in trace.tool_outputs)
+

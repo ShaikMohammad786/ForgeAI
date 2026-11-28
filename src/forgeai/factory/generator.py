@@ -12,12 +12,14 @@ from forgeai.llm.base import LLMProvider
 from forgeai.prompts import render_prompt
 from forgeai.schemas.agent import (
     AgentDefinition,
+    CustomToolSpec,
     OutputContract,
     PromptCandidate,
     RetrievalConfig,
     ToolBinding,
 )
 from forgeai.schemas.requirements import RequirementsDoc
+from forgeai.tools.custom_macro import validate_custom_tool_spec
 from forgeai.tools.registry import TOOL_CATALOG, evaluate_tool_eligibility, format_tools_for_prompt
 
 
@@ -71,13 +73,79 @@ def _build_tool_bindings(
     return bindings
 
 
+class _CustomMacrosPayload(BaseModel):
+    macros: list[CustomToolSpec] = Field(default_factory=list)
+
+
+def _synthesize_custom_tools(
+    requirements: RequirementsDoc,
+    corpus: LoadedCorpus,
+    llm: LLMProvider,
+) -> list[CustomToolSpec]:
+    """Synthesize 0-2 AST-validated declarative domain macros when calculation/tabular rules warrant."""
+    eligible_specs, _ = evaluate_tool_eligibility(requirements.brief, corpus)
+    eligible_names = {s.name for s in eligible_specs}
+    if not (corpus.has_csv or "calculator" in eligible_names or "statistics_calculator" in eligible_names):
+        return []
+
+    previews = [
+        {
+            "filename": d.summary.filename,
+            "doc_type": d.summary.doc_type,
+            "preview": d.summary.preview[:420],
+        }
+        for d in corpus.documents[:8]
+    ]
+    prompt = render_prompt(
+        "custom_tool_synthesis.j2",
+        requirements=requirements,
+        corpus_previews=previews,
+        has_tabular=corpus.has_csv,
+    )
+    try:
+        payload, _ = llm.complete_structured(
+            [
+                {"role": "system", "content": "You output strict JSON only."},
+                {"role": "user", "content": prompt},
+            ],
+            _CustomMacrosPayload,
+            temperature=0.1,
+            max_tokens=900,
+        )
+    except Exception:
+        return []
+
+    reserved = set(TOOL_CATALOG.keys())
+    valid: list[CustomToolSpec] = []
+    seen_names: set[str] = set()
+    for item in payload.macros:
+        norm_name = item.name.strip().lower()
+        if norm_name in seen_names:
+            continue
+        candidate = item.model_copy(update={"name": norm_name})
+        ok, _ = validate_custom_tool_spec(
+            candidate,
+            docs_dir=corpus.docs_dir,
+            reserved_names=reserved,
+            has_tabular=corpus.has_csv,
+        )
+        if ok:
+            valid.append(candidate)
+            seen_names.add(norm_name)
+        if len(valid) >= 2:
+            break
+    return valid
+
+
 def _fallback_system_prompt(
     requirements: RequirementsDoc,
     tools: list[ToolBinding],
     refusal_prefix: str,
     strategy_name: str,
+    custom_tools: list[CustomToolSpec] | None = None,
 ) -> str:
-    tool_names = ", ".join(t.name for t in tools) if tools else "none"
+    all_names = [t.name for t in tools] + [ct.name for ct in (custom_tools or [])]
+    tool_names = ", ".join(all_names) if all_names else "none"
     must_ans = "; ".join(requirements.must_answer_topics[:6])
     must_ref = "; ".join(requirements.must_refuse_topics[:6])
     return (
@@ -107,7 +175,8 @@ def generate_agent_candidates(
     """Generate baseline AgentDefinition plus 2-3 candidate prompts for the Prompt Tournament."""
     output_contract = OutputContract()
     tools = _build_tool_bindings(requirements, corpus)
-    tools_desc = format_tools_for_prompt(tools)
+    custom_tools = _synthesize_custom_tools(requirements, corpus, llm)
+    tools_desc = format_tools_for_prompt(tools, custom_tools=custom_tools)
 
     candidates: list[PromptCandidate] = []
     chosen_retrieval: RetrievalConfig | None = None
@@ -137,7 +206,7 @@ def generate_agent_candidates(
             sys_prompt = payload.system_prompt.strip()
             if len(sys_prompt) < 80:
                 sys_prompt = _fallback_system_prompt(
-                    requirements, tools, output_contract.refusal_phrase_prefix, strat_name
+                    requirements, tools, output_contract.refusal_phrase_prefix, strat_name, custom_tools
                 )
             if chosen_retrieval is None:
                 chosen_name = payload.agent_name.strip() or requirements.domain_name
@@ -151,7 +220,7 @@ def generate_agent_candidates(
                 )
         except Exception:
             sys_prompt = _fallback_system_prompt(
-                requirements, tools, output_contract.refusal_phrase_prefix, strat_name
+                requirements, tools, output_contract.refusal_phrase_prefix, strat_name, custom_tools
             )
 
         candidates.append(
@@ -181,10 +250,11 @@ def generate_agent_candidates(
         model_name=llm.model_name,
         judge_model_name=judge_model_name,
         temperature=0.08,
-        max_tool_steps=3 if tools else 1,
+        max_tool_steps=3 if (tools or custom_tools) else 1,
         system_prompt=candidates[0].system_prompt,
         retrieval=chosen_retrieval,
         tools=tools,
+        custom_tools=custom_tools,
         output_contract=output_contract,
         must_answer_topics=requirements.must_answer_topics,
         must_refuse_topics=requirements.must_refuse_topics,

@@ -7,8 +7,13 @@ from pathlib import Path
 import pytest
 
 from forgeai.llm.base import BudgetExceededError, BudgetTracker, LLMResponse, parse_json_dict
-from forgeai.schemas.agent import ToolBinding
-from forgeai.tools.registry import ToolAuthorizationError, execute_tool
+from forgeai.schemas.agent import CustomToolSpec, ToolBinding
+from forgeai.tools import (
+    TOOL_CATALOG,
+    ToolAuthorizationError,
+    execute_tool,
+    validate_custom_tool_spec,
+)
 
 
 def test_parse_json_dict_repairs_fenced_and_trailing_commas() -> None:
@@ -109,3 +114,143 @@ def test_unit_converter_and_json_record_lookup(tmp_path: Path) -> None:
         docs_dir=tmp_path,
     )
     assert "9312456" in j_out
+
+
+def test_extended_tabular_and_structured_record_lookups(tmp_path: Path) -> None:
+    import openpyxl
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(["sku", "price"])
+    ws.append(["MP-77", 350])
+    wb.save(str(tmp_path / "catalog.xlsx"))
+
+    (tmp_path / "ports.tsv").write_text("port\tfee\nRotterdam\t620\n", encoding="utf-8")
+    (tmp_path / "events.jsonl").write_text('{"id": 10, "msg": "Drydock inspection"}\n', encoding="utf-8")
+    (tmp_path / "rules.yaml").write_text("sla:\n  max_hours: 48\n", encoding="utf-8")
+
+    bindings = [
+        ToolBinding(name="csv_lookup", description="tabular", justification="test"),
+        ToolBinding(name="json_record_lookup", description="records", justification="test"),
+    ]
+    x_out = execute_tool("csv_lookup", {"filename": "catalog.xlsx", "query": "MP-77"}, authorized_tools=bindings, docs_dir=tmp_path)
+    assert "350" in x_out
+
+    t_out = execute_tool("csv_lookup", {"filename": "ports.tsv", "query": "Rotterdam"}, authorized_tools=bindings, docs_dir=tmp_path)
+    assert "620" in t_out
+
+    l_out = execute_tool("json_record_lookup", {"filename": "events.jsonl", "query": "Drydock"}, authorized_tools=bindings, docs_dir=tmp_path)
+    assert "Drydock inspection" in l_out
+
+    y_out = execute_tool("json_record_lookup", {"filename": "rules.yaml", "query": "48"}, authorized_tools=bindings, docs_dir=tmp_path)
+    assert "48" in y_out
+
+
+def test_statistics_calculator_and_text_stats_regex(tmp_path: Path) -> None:
+    (tmp_path / "engine.log").write_text(
+        "2026-11-20 INFO Startup complete\n"
+        "2026-11-21 ERROR Pump pressure low\n"
+        "2026-11-22 ERROR Oil temp high\n",
+        encoding="utf-8",
+    )
+    bindings = [
+        ToolBinding(name="statistics_calculator", description="stats", justification="test"),
+        ToolBinding(name="text_stats_and_regex", description="text", justification="test"),
+    ]
+    s_out = execute_tool(
+        "statistics_calculator",
+        {"values": [10, 20, 30], "weights": [1, 2, 1]},
+        authorized_tools=bindings,
+        docs_dir=tmp_path,
+    )
+    assert '"mean": 20.0' in s_out
+    assert '"weighted_avg": 20.0' in s_out
+
+    pct_out = execute_tool(
+        "statistics_calculator",
+        {"old_value": 100, "new_value": 125},
+        authorized_tools=bindings,
+        docs_dir=tmp_path,
+    )
+    assert '"percent_change": 25.0' in pct_out
+
+    r_out = execute_tool(
+        "text_stats_and_regex",
+        {"pattern": "ERROR", "filename": "engine.log"},
+        authorized_tools=bindings,
+        docs_dir=tmp_path,
+    )
+    assert '"total_matches": 2' in r_out
+
+
+def test_custom_macro_ast_validation_and_execution(tmp_path: Path) -> None:
+    (tmp_path / "catalog.csv").write_text("sku,criticality,price\nA1,CRITICAL,900\nB2,LOW,50\n", encoding="utf-8")
+    formula_macro = CustomToolSpec(
+        name="calc_landed_cost",
+        description="Compute bulk quote with discount and shipping.",
+        tool_type="formula",
+        parameters=["unit_price", "qty", "discount_pct", "shipping"],
+        expression="unit_price * qty * (1 - discount_pct / 100) + shipping",
+    )
+    ok, msg = validate_custom_tool_spec(
+        formula_macro,
+        docs_dir=tmp_path,
+        reserved_names=set(TOOL_CATALOG.keys()),
+        has_tabular=True,
+    )
+    assert ok, msg
+
+    out = execute_tool(
+        "calc_landed_cost",
+        {"unit_price": 500, "qty": 4, "discount_pct": 10, "shipping": 120},
+        authorized_tools=[],
+        custom_tools=[formula_macro],
+        docs_dir=tmp_path,
+    )
+    assert "1920" in out
+
+    # Reject unsafe AST, undeclared variables, and reserved name collision
+    evil = CustomToolSpec(
+        name="bad_exec",
+        description="bad",
+        tool_type="formula",
+        parameters=["x"],
+        expression="__import__('os').system('ls')",
+    )
+    ok_evil, _ = validate_custom_tool_spec(evil, docs_dir=tmp_path, reserved_names=set(TOOL_CATALOG.keys()), has_tabular=False)
+    assert ok_evil is False
+
+    collision = CustomToolSpec(
+        name="calculator",
+        description="collision",
+        tool_type="formula",
+        parameters=["x"],
+        expression="x + 1",
+    )
+    ok_col, _ = validate_custom_tool_spec(collision, docs_dir=tmp_path, reserved_names=set(TOOL_CATALOG.keys()), has_tabular=False)
+    assert ok_col is False
+
+    # Valid tabular filter preset
+    tab_macro = CustomToolSpec(
+        name="critical_spares_only",
+        description="List only CRITICAL spares",
+        tool_type="tabular_filter",
+        target_file="catalog.csv",
+        preset_filters={"criticality": "CRITICAL"},
+    )
+    ok_tab, msg_tab = validate_custom_tool_spec(
+        tab_macro,
+        docs_dir=tmp_path,
+        reserved_names=set(TOOL_CATALOG.keys()),
+        has_tabular=True,
+    )
+    assert ok_tab, msg_tab
+    tab_out = execute_tool(
+        "critical_spares_only",
+        {},
+        authorized_tools=[],
+        custom_tools=[tab_macro],
+        docs_dir=tmp_path,
+    )
+    assert "A1" in tab_out and "B2" not in tab_out
+

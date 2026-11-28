@@ -1,20 +1,25 @@
-"""Central Tool Registry with deterministic capability filtering & runtime execution guard."""
+"""Central Tool Registry (10 standard tools + declarative AST custom macros) with strict runtime guard."""
 
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
 from forgeai.ingestion.loader import LoadedCorpus
-from forgeai.schemas.agent import ToolBinding
+from forgeai.schemas.agent import CustomToolSpec, ToolBinding
 from forgeai.tools.calculator import run_calculator
+from forgeai.tools.country_lookup import run_country_info
 from forgeai.tools.csv_lookup import run_csv_lookup
 from forgeai.tools.currency_converter import run_currency_converter
 from forgeai.tools.current_date import run_current_date
+from forgeai.tools.custom_macro import execute_custom_tool
 from forgeai.tools.http_weather import run_open_meteo_weather
 from forgeai.tools.json_lookup import run_json_record_lookup
+from forgeai.tools.statistics_tool import run_statistics_calculator
+from forgeai.tools.text_analyzer import run_text_stats_and_regex
 from forgeai.tools.unit_converter import run_unit_converter
 
 
@@ -24,7 +29,7 @@ class ToolAuthorizationError(PermissionError):
 
 @dataclass(frozen=True)
 class ToolSpec:
-    """Metadata and implementation hook for a ForgeAI tool."""
+    """Metadata and implementation hook for a ForgeAI standard tool."""
 
     name: str
     description: str
@@ -35,19 +40,22 @@ class ToolSpec:
     weather_intent_required: bool = False
     fx_intent_required: bool = False
     unit_intent_required: bool = False
+    country_intent_required: bool = False
+    stats_intent_required: bool = False
+    text_analysis_intent_required: bool = False
 
 
 TOOL_CATALOG: dict[str, ToolSpec] = {
     "csv_lookup": ToolSpec(
         name="csv_lookup",
-        description="Search, filter, sort, or aggregate rows in CSV files inside the corpus.",
+        description="Search, filter, sort, or aggregate rows in CSV, TSV, and XLSX spreadsheets inside the corpus.",
         args_schema_hint='{"filename": "optional.csv", "query": "search terms", "filters": {"col": "val"}, "aggregate": "count|sum|mean|min|max", "agg_column": "col", "limit": 8}',
         handler=run_csv_lookup,
         requires_csv=True,
     ),
     "json_record_lookup": ToolSpec(
         name="json_record_lookup",
-        description="Search and filter structured JSON record files inside the document corpus.",
+        description="Search and filter structured JSON, JSONL, and YAML record files inside the document corpus.",
         args_schema_hint='{"filename": "optional.json", "query": "search terms", "limit": 10}',
         handler=run_json_record_lookup,
         requires_json=True,
@@ -57,6 +65,13 @@ TOOL_CATALOG: dict[str, ToolSpec] = {
         description="Evaluate exact arithmetic expressions, totals, percentages, discounts, or unit math.",
         args_schema_hint='{"expression": "(1250 * 4) * 1.15"}',
         handler=run_calculator,
+    ),
+    "statistics_calculator": ToolSpec(
+        name="statistics_calculator",
+        description="Compute descriptive statistics (mean, median, stdev, min, max, weighted_avg) or percentage changes.",
+        args_schema_hint='{"values": [120, 150, 180], "weights": [1, 2, 1]} OR {"old_value": 100, "new_value": 125}',
+        handler=run_statistics_calculator,
+        stats_intent_required=True,
     ),
     "unit_converter": ToolSpec(
         name="unit_converter",
@@ -79,6 +94,20 @@ TOOL_CATALOG: dict[str, ToolSpec] = {
         handler=run_open_meteo_weather,
         weather_intent_required=True,
     ),
+    "http_public_country_info": ToolSpec(
+        name="http_public_country_info",
+        description="Fetch ISO codes, capital, currencies, calling code, and timezones for a country via keyless RestCountries API.",
+        args_schema_hint='{"country": "Singapore"}',
+        handler=run_country_info,
+        country_intent_required=True,
+    ),
+    "text_stats_and_regex": ToolSpec(
+        name="text_stats_and_regex",
+        description="Compute document word/line stats or search exact regex/keyword occurrences across files in the corpus.",
+        args_schema_hint='{"pattern": "ERROR|WARN", "filename": "optional.log", "limit": 12}',
+        handler=run_text_stats_and_regex,
+        text_analysis_intent_required=True,
+    ),
     "current_date": ToolSpec(
         name="current_date",
         description="Get today's date, day of week, or compute date offsets (add_days) and day differences (start_date, end_date).",
@@ -100,6 +129,21 @@ _FX_PATTERNS = re.compile(
 
 _UNIT_PATTERNS = re.compile(
     r"\b(unit\s*conver|convert\s*(kg|lb|bar|psi|km|nm|celsius|fahrenheit|knots|liters)|nautical\s*mile|psi\b|bar\b|weight_kg|tonnes?|knots?)\b",
+    re.IGNORECASE,
+)
+
+_COUNTRY_PATTERNS = re.compile(
+    r"\b(country\s*info|country\s*code|iso\s*code|calling\s*code|capital\s*city|country\s*currency|timezone\s*of|port\s*country|restcountries|nation\s*metadata)\b",
+    re.IGNORECASE,
+)
+
+_STATS_PATTERNS = re.compile(
+    r"\b(statistics|statistical|mean|median|standard\s*deviation|stdev|variance|weighted\s*average|percent\s*change|distribution|benchmark|kpi\s*summary)\b",
+    re.IGNORECASE,
+)
+
+_TEXT_ANALYSIS_PATTERNS = re.compile(
+    r"\b(regex|pattern\s*match|word\s*count|line\s*count|occurrence|frequency|log\s*audit|audit\s*logs?|log\s*errors?|scan\s*documents?)\b",
     re.IGNORECASE,
 )
 
@@ -133,18 +177,23 @@ def evaluate_tool_eligibility(
     rejected: dict[str, str] = {}
 
     positive_brief = _positive_brief_only(brief)
-    has_json = any(d.summary.doc_type == "json" for d in corpus.documents)
-    combined_hints = positive_brief + "\n" + " ".join(corpus.filenames) + "\n" + " ".join(
-        d.summary.preview for d in corpus.documents
+    has_structured = corpus.has_structured_records
+    has_logs = any(d.summary.doc_type == "log" for d in corpus.documents)
+    combined_hints = (
+        positive_brief
+        + "\n"
+        + " ".join(corpus.filenames)
+        + "\n"
+        + " ".join(d.summary.preview for d in corpus.documents)
     )
 
     for name, spec in TOOL_CATALOG.items():
         if spec.requires_csv and not corpus.has_csv:
-            rejected[name] = "Excluded deterministically: no CSV files exist in the document corpus."
+            rejected[name] = "Excluded deterministically: no CSV/TSV/XLSX files exist in the document corpus."
             continue
 
-        if spec.requires_json and not has_json:
-            rejected[name] = "Excluded deterministically: no JSON record files exist in the document corpus."
+        if spec.requires_json and not has_structured:
+            rejected[name] = "Excluded deterministically: no JSON/JSONL/YAML files exist in the document corpus."
             continue
 
         if spec.weather_intent_required and not _WEATHER_PATTERNS.search(positive_brief):
@@ -159,9 +208,31 @@ def evaluate_tool_eligibility(
             )
             continue
 
-        if spec.unit_intent_required and not (_UNIT_PATTERNS.search(positive_brief) or _UNIT_PATTERNS.search(combined_hints)):
+        if spec.unit_intent_required and not (
+            _UNIT_PATTERNS.search(positive_brief) or _UNIT_PATTERNS.search(combined_hints)
+        ):
             rejected[name] = (
                 "Excluded deterministically: no engineering/logistics unit conversion intent detected."
+            )
+            continue
+
+        if spec.country_intent_required and not _COUNTRY_PATTERNS.search(positive_brief):
+            rejected[name] = (
+                "Excluded deterministically: user brief does not request country metadata, ISO codes, or calling codes."
+            )
+            continue
+
+        if spec.stats_intent_required and not _STATS_PATTERNS.search(positive_brief):
+            rejected[name] = (
+                "Excluded deterministically: user brief does not request statistical/variance/KPI calculations."
+            )
+            continue
+
+        if spec.text_analysis_intent_required and not (
+            _TEXT_ANALYSIS_PATTERNS.search(positive_brief) or has_logs
+        ):
+            rejected[name] = (
+                "Excluded deterministically: no regex/frequency text audit intent or log corpus detected."
             )
             continue
 
@@ -178,15 +249,30 @@ def evaluate_tool_eligibility(
     return eligible, rejected
 
 
-def format_tools_for_prompt(tools: list[ToolSpec | ToolBinding]) -> str:
-    """Format eligible or authorized tools cleanly for LLM prompts."""
-    if not tools:
+def format_tools_for_prompt(
+    tools: list[ToolSpec | ToolBinding],
+    custom_tools: list[CustomToolSpec] | None = None,
+) -> str:
+    """Format eligible standard tools and declarative custom macro tools for LLM prompts."""
+    custom_list = custom_tools or []
+    if not tools and not custom_list:
         return "NONE (Do not call external tools; answer solely from retrieved text.)"
     lines: list[str] = []
     for t in tools:
         spec = TOOL_CATALOG.get(t.name)
         hint = spec.args_schema_hint if spec else "{}"
         lines.append(f"- {t.name}: {t.description}\n  Args JSON: {hint}")
+    for ct in custom_list:
+        if ct.tool_type == "formula":
+            arg_hint = json.dumps({p: 0.0 for p in ct.parameters})
+            lines.append(
+                f"- {ct.name} [CUSTOM MACRO formula: {ct.expression}]: {ct.description}\n  Args JSON: {arg_hint}"
+            )
+        else:
+            hint = json.dumps({"query": "optional keywords", "limit": 8})
+            lines.append(
+                f"- {ct.name} [CUSTOM MACRO preset lookup on {ct.target_file or 'tabular file'}]: {ct.description}\n  Args JSON: {hint}"
+            )
     return "\n".join(lines)
 
 
@@ -196,13 +282,17 @@ def execute_tool(
     *,
     authorized_tools: list[ToolBinding],
     docs_dir: Path,
+    custom_tools: list[CustomToolSpec] | None = None,
 ) -> str:
-    """Execute a tool ONLY if it is explicitly attached to the agent's ToolBindings."""
-    allowed_names = {t.name for t in authorized_tools}
+    """Execute a standard or declarative custom tool ONLY if bound to the agent definition."""
+    custom_map = {ct.name: ct for ct in (custom_tools or [])}
+    allowed_names = {t.name for t in authorized_tools} | set(custom_map.keys())
     if tool_name not in allowed_names:
         raise ToolAuthorizationError(
             f"Tool '{tool_name}' is not authorized for this agent. Allowed: {sorted(allowed_names)}"
         )
+    if tool_name in custom_map:
+        return execute_custom_tool(custom_map[tool_name], arguments or {}, docs_dir)
     spec = TOOL_CATALOG.get(tool_name)
     if spec is None:
         raise ToolAuthorizationError(f"Unknown tool '{tool_name}'")

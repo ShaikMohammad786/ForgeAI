@@ -1,4 +1,4 @@
-"""Safe sandboxed CSV lookup tool scoped strictly to the agent's docs folder."""
+"""Safe sandboxed tabular lookup tool (CSV, TSV, XLSX) scoped strictly to docs_dir."""
 
 from __future__ import annotations
 
@@ -8,31 +8,60 @@ from typing import Any
 
 import pandas as pd
 
+TABULAR_EXTENSIONS = {".csv", ".tsv", ".xlsx"}
 
-def _resolve_csv_files(docs_dir: Path) -> list[Path]:
-    return sorted(p for p in docs_dir.rglob("*.csv") if p.is_file())
+
+def _resolve_tabular_files(docs_dir: Path) -> list[Path]:
+    return sorted(
+        p
+        for p in docs_dir.rglob("*")
+        if p.is_file() and p.suffix.lower() in TABULAR_EXTENSIONS
+    )
+
+
+def _read_tabular_df(path: Path) -> pd.DataFrame:
+    ext = path.suffix.lower()
+    if ext == ".csv":
+        return pd.read_csv(path)
+    if ext == ".tsv":
+        return pd.read_csv(path, sep="\t")
+    if ext == ".xlsx":
+        excel = pd.ExcelFile(path, engine="openpyxl")
+        frames = []
+        for sheet in excel.sheet_names:
+            sdf = pd.read_excel(excel, sheet_name=sheet)
+            if not sdf.empty:
+                if len(excel.sheet_names) > 1:
+                    sdf = sdf.copy()
+                    sdf.insert(0, "_sheet", sheet)
+                frames.append(sdf)
+        return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+    return pd.DataFrame()
 
 
 def run_csv_lookup(args: dict[str, Any], docs_dir: Path) -> str:
-    """Search, filter, or aggregate CSV files inside docs_dir safely."""
-    csv_files = _resolve_csv_files(docs_dir)
-    if not csv_files:
-        return json.dumps({"error": "No CSV files exist in the document corpus."})
+    """Search, filter, sort, or aggregate CSV, TSV, and XLSX files inside docs_dir safely."""
+    tabular_files = _resolve_tabular_files(docs_dir)
+    if not tabular_files:
+        return json.dumps({"error": "No CSV, TSV, or XLSX files exist in the document corpus."})
 
     requested_file = str(args.get("filename") or "").strip()
-    target_path = csv_files[0]
+    target_path = tabular_files[0]
     if requested_file:
-        matches = [p for p in csv_files if p.name.lower() == Path(requested_file).name.lower()]
+        matches = [p for p in tabular_files if p.name.lower() == Path(requested_file).name.lower()]
         if not matches:
             return json.dumps(
                 {
-                    "error": f"CSV file '{requested_file}' not found.",
-                    "available_csv_files": [p.name for p in csv_files],
+                    "error": f"Tabular file '{requested_file}' not found.",
+                    "available_tabular_files": [p.name for p in tabular_files],
                 }
             )
         target_path = matches[0]
 
-    df = pd.read_csv(target_path)
+    df = _read_tabular_df(target_path)
+    if df.empty:
+        return json.dumps({"file": target_path.name, "columns": [], "total_matches": 0, "rows": []})
+
     query = str(args.get("query") or "").strip()
     filters = args.get("filters") or {}
     sort_by = str(args.get("sort_by") or "").strip()
@@ -78,8 +107,6 @@ def run_csv_lookup(args: dict[str, Any], docs_dir: Path) -> str:
                 filtered = matched.sort_values("_match_score", ascending=False).drop(
                     columns=["_match_score"]
                 )
-            else:
-                filtered = matched
 
     if sort_by and sort_by in filtered.columns and not filtered.empty:
         filtered = filtered.sort_values(sort_by, ascending=ascending)

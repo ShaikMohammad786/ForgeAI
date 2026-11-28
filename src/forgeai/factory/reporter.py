@@ -131,8 +131,12 @@ def render_report_markdown(
         report.honest_assessment,
         "",
         "## Attached vs Rejected Tools",
-        f"- **Attached Tools:** `{[t.name for t in agent.tools] or ['none']}`",
+        f"- **Attached Standard Tools:** `{[t.name for t in agent.tools] or ['none']}`",
+        f"- **Synthesized Custom Macros (AST-verified):** `{[f'{ct.name} ({ct.tool_type})' for ct in agent.custom_tools] or ['none']}`",
     ]
+    for ct in agent.custom_tools:
+        detail = f"`{ct.expression}`" if ct.tool_type == "formula" else f"`{ct.target_file}` filters={ct.preset_filters}"
+        lines.append(f"- **Custom Macro `{ct.name}`:** {ct.description} — {detail}")
     for tool_name, reason in requirements.rejected_tools.items():
         lines.append(f"- **Rejected `{tool_name}`:** {reason}")
 

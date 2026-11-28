@@ -231,7 +231,8 @@ class AgentRuntime:
             question, self.agent.retrieval, apply_threshold=True
         )
         context_block = self._format_context(hits)
-        tools_block = format_tools_for_prompt(self.agent.tools)
+        tools_block = format_tools_for_prompt(self.agent.tools, custom_tools=self.agent.custom_tools)
+        has_any_tools = bool(self.agent.tools or self.agent.custom_tools)
 
         history_str = ""
         if chat_history:
@@ -264,7 +265,7 @@ class AgentRuntime:
         tools_used: list[str] = []
         final_raw = ""
 
-        max_steps = self.agent.max_tool_steps if self.agent.tools else 1
+        max_steps = self.agent.max_tool_steps if has_any_tools else 1
         for step in range(max_steps + 1):
             llm_resp = self.llm.complete(
                 messages,
@@ -295,7 +296,7 @@ class AgentRuntime:
                 break
 
             action = str(parsed.get("action") or "").lower().strip()
-            if action == "tool_call" and step < max_steps and self.agent.tools:
+            if action == "tool_call" and step < max_steps and has_any_tools:
                 t_name = str(parsed.get("tool") or "").strip()
                 t_args = parsed.get("args") if isinstance(parsed.get("args"), dict) else {}
                 try:
@@ -304,6 +305,7 @@ class AgentRuntime:
                         t_args,
                         authorized_tools=self.agent.tools,
                         docs_dir=self.docs_dir,
+                        custom_tools=self.agent.custom_tools,
                     )
                     tools_used.append(t_name)
                 except ToolAuthorizationError as exc:

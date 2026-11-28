@@ -30,6 +30,20 @@ class ToolBinding(BaseModel):
     required_capabilities: list[str] = Field(default_factory=list)
 
 
+class CustomToolSpec(BaseModel):
+    """Declarative domain macro tool synthesized per brief & corpus (AST-verified, zero exec)."""
+
+    name: str
+    description: str
+    tool_type: Literal["formula", "tabular_filter"] = "formula"
+    parameters: list[str] = Field(default_factory=list)
+    expression: str = ""
+    target_file: str = ""
+    preset_filters: dict[str, str] = Field(default_factory=dict)
+    source_document: str = ""
+    justification: str = ""
+
+
 class OutputContract(BaseModel):
     """Strict output contract enforced by the generic runtime."""
 
@@ -91,6 +105,7 @@ class AgentDefinition(BaseModel):
     system_prompt: str
     retrieval: RetrievalConfig = Field(default_factory=RetrievalConfig)
     tools: list[ToolBinding] = Field(default_factory=list)
+    custom_tools: list[CustomToolSpec] = Field(default_factory=list)
     output_contract: OutputContract = Field(default_factory=OutputContract)
     must_answer_topics: list[str] = Field(default_factory=list)
     must_refuse_topics: list[str] = Field(default_factory=list)

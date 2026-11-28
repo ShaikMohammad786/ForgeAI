@@ -36,9 +36,14 @@ def test_hr_brief_never_attaches_weather_or_csv_tools(tmp_path: Path) -> None:
     assert "json_record_lookup" not in elig_names
     assert "currency_converter" not in elig_names
     assert "unit_converter" not in elig_names
+    assert "http_public_country_info" not in elig_names
+    assert "statistics_calculator" not in elig_names
+    assert "text_stats_and_regex" not in elig_names
     assert "open_meteo_weather" in rejected
     assert "csv_lookup" in rejected
     assert "currency_converter" in rejected
+    assert "http_public_country_info" in rejected
+    assert len(elig_names) + len(rejected) == 10
 
 
 def test_groundability_guard_blocks_ungroundable_brief_and_flags_partial_gaps(tmp_path: Path) -> None:
@@ -103,3 +108,16 @@ def test_refusal_clause_in_brief_does_not_trigger_weather_or_false_gap(tmp_path:
     req = run_intake_interview(brief, corpus, llm)
     assert any("weather" in r.lower() or "medical" in r.lower() for r in req.must_refuse_topics)
     assert req.groundability.overall_status != "ungroundable"
+
+
+def test_intent_gates_unlock_new_standard_tools(tmp_path: Path) -> None:
+    (tmp_path / "fleet.log").write_text("2026-11-20 ERROR sensor timeout\n", encoding="utf-8")
+    corpus = load_corpus(tmp_path)
+    elig, _ = evaluate_tool_eligibility(
+        "Audit log errors, compute statistical mean and standard deviation across incidents, and fetch country code metadata for ports.",
+        corpus,
+    )
+    elig_names = {t.name for t in elig}
+    assert "text_stats_and_regex" in elig_names
+    assert "statistics_calculator" in elig_names
+    assert "http_public_country_info" in elig_names
