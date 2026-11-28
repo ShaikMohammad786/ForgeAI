@@ -62,7 +62,7 @@ def resolve_provider_choice(
         return "ollama"
     if status.gemini_available:
         return "gemini"
-    if (cfg.openai_compat_base_url or "").strip():
+    if (getattr(cfg, "openai_compat_base_url", "") or "").strip():
         return "openai_compatible"
     if status.ollama_available:
         return "ollama"
@@ -98,9 +98,9 @@ def build_provider(
         )
 
     if chosen == "openai_compatible":
-        base_url = (openai_base_url or cfg.openai_compat_base_url or "").strip()
-        api_key = (openai_api_key or cfg.openai_compat_api_key or "").strip() or None
-        model = (model_name or cfg.openai_compat_model or "gpt-4o-mini").strip()
+        base_url = (openai_base_url or getattr(cfg, "openai_compat_base_url", "") or "").strip()
+        api_key = (openai_api_key or getattr(cfg, "openai_compat_api_key", "") or "").strip() or None
+        model = (model_name or getattr(cfg, "openai_compat_model", "") or "gpt-4o-mini").strip()
         return OpenAICompatProvider(
             model_name=model,
             base_url=base_url,

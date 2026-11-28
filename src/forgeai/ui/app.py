@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import json
 import sys
 import tempfile
@@ -19,6 +20,18 @@ _ROOT_DIR = Path(__file__).resolve().parents[3]
 _SRC_DIR = _ROOT_DIR / "src"
 if str(_SRC_DIR) not in sys.path:
     sys.path.insert(0, str(_SRC_DIR))
+
+# Refresh cached forgeai submodules if Streamlit Cloud hot-reloaded app.py across commits
+if "forgeai.config" in sys.modules:
+    try:
+        _fs = getattr(sys.modules["forgeai.config"], "ForgeSettings", None)
+        if _fs is not None and "openai_compat_base_url" not in getattr(_fs, "model_fields", {}):
+            for _mod_name in list(sys.modules.keys()):
+                if _mod_name == "forgeai" or _mod_name.startswith("forgeai."):
+                    sys.modules.pop(_mod_name, None)
+    except Exception:
+        pass
+importlib.invalidate_caches()
 
 from forgeai.config import ForgeSettings, get_settings
 from forgeai.factory.eval_gen import generate_eval_set
@@ -363,11 +376,15 @@ def _render_sidebar(cfg: ForgeSettings) -> dict[str, Any]:
         )
 
         # Determine which backend credentials/URLs are active for this mode
+        cfg_oai_url = str(getattr(cfg, "openai_compat_base_url", "") or "").strip()
+        cfg_oai_key = str(getattr(cfg, "openai_compat_api_key", "") or "").strip()
+        cfg_oai_model = str(getattr(cfg, "openai_compat_model", "") or "gpt-4o-mini").strip()
+
         effective_ollama_host = cfg.ollama_host.rstrip("/")
         effective_gemini_key: str | None = secret_gemini_key or None
-        effective_openai_url = cfg.openai_compat_base_url.strip()
-        effective_openai_key: str | None = secret_openai_key or cfg.openai_compat_api_key.strip() or None
-        openai_preset_default_model = cfg.openai_compat_model
+        effective_openai_url = cfg_oai_url
+        effective_openai_key: str | None = secret_openai_key or cfg_oai_key or None
+        openai_preset_default_model = cfg_oai_model
 
         if execution_mode == "Hybrid (Mix Generator & Judge)":
             col_gp, col_jp = st.columns(2)
@@ -411,8 +428,8 @@ def _render_sidebar(cfg: ForgeSettings) -> dict[str, Any]:
             preset_name = st.selectbox("Provider Preset", options=list(OPENAI_COMPAT_PRESETS.keys()))
             p_url, p_model, _ = OPENAI_COMPAT_PRESETS[preset_name]
             if st.session_state.get("prev_oai_preset") != preset_name:
-                st.session_state["oai_base_url_val"] = p_url or cfg.openai_compat_base_url
-                st.session_state["oai_model_val"] = p_model or cfg.openai_compat_model
+                st.session_state["oai_base_url_val"] = p_url or cfg_oai_url
+                st.session_state["oai_model_val"] = p_model or cfg_oai_model
                 st.session_state["prev_oai_preset"] = preset_name
             effective_openai_url = st.text_input(
                 "OpenAI-Compatible Base URL",
@@ -425,8 +442,8 @@ def _render_sidebar(cfg: ForgeSettings) -> dict[str, Any]:
                 type="password",
                 key="oai_api_key_input",
             ).strip()
-            effective_openai_key = oai_key_input or secret_openai_key or cfg.openai_compat_api_key.strip() or None
-            openai_preset_default_model = st.session_state.get("oai_model_val", p_model or cfg.openai_compat_model)
+            effective_openai_key = oai_key_input or secret_openai_key or cfg_oai_key or None
+            openai_preset_default_model = st.session_state.get("oai_model_val", p_model or cfg_oai_model)
 
         status = discover_backends(cfg, ollama_host=effective_ollama_host)
         ollama_choices = status.ollama_models or [cfg.ollama_model, cfg.ollama_judge_model]
