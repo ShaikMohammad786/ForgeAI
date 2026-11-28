@@ -1,11 +1,11 @@
 # Optimization Iteration Log
 
-## Iteration 1 (wrong_refusal) — ACCEPTED
-- **Diagnosis:** Dominant failure is `wrong_refusal` for out-of-scope questions.
-- **Failure IDs Targeted:** `['eval_17', 'eval_18', 'eval_19', 'eval_20', 'eval_21']`
-- **Score:** `0.703` -> `0.723`
-- **Pass Rate:** `58.3%` -> `62.5%`
-- **Decision:** Accepted patch (+4.2pp pass rate, +0.020 composite score).
+## Iteration 1 (prompt_defect) — ACCEPTED
+- **Diagnosis:** Dominant failure is retrieval misses due to low recall and score thresholds.
+- **Failure IDs Targeted:** `['eval_10', 'eval_12', 'eval_13', 'eval_16', 'eval_18']`
+- **Score:** `0.791` -> `0.810`
+- **Pass Rate:** `58.3%` -> `70.8%`
+- **Decision:** Accepted patch (+12.5pp pass rate, +0.020 composite score).
 - **Targeted Diff:**
-  - `retrieval.min_score_threshold`: `0.08` -> `0.12` (Raise score gate to enforce refusal on out-of-scope queries)
-  - `system_prompt`: `(len=733)` -> `+ If the question is out of scope, refuse it based on provided documents and current date.` (Clarify answer-vs-refuse boundary)
+  - `system_prompt`: `(len=923)` -> `+ FORMAT & COMPLETENESS RULE: Include all key facts, exact numbers, and at least one valid filename in citations; return s` (Repair prompt compliance and fact/citation completeness)
+  - `retrieval.top_k`: `5` -> `6` (Provide +1 chunk for multi-document synthesis)

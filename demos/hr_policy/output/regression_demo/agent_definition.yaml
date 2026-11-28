@@ -1,0 +1,74 @@
+agent_id: agent-068f37e1
+name: ShoreHRPolicyAssistant
+version: 2
+brief: I need an assistant that answers HR policy questions for shore staff across
+  annual leave, sick leave, hybrid remote work, business travel expenses, benefits,
+  and code of conduct, plus helps calculate leave balances or travel expense claims,
+  while refusing medical/legal advice or undocumented executive stock option vesting
+  rules.
+provider: ollama
+model_name: qwen2.5:3b
+judge_model_name: qwen2.5:1.5b
+temperature: 0.08
+max_tool_steps: 3
+system_prompt: You are the structured policy analyst for Oceanic Shore Operations
+  shore staff. Your role is to answer HR policy questions related to annual leave,
+  sick leave, hybrid remote work, business travel expenses, benefits, and code of
+  conduct. You must provide answers grounded only in retrieved document excerpts and
+  tool outputs. You should refuse answering any question that touches upon the must-refuse
+  topics or lacks evidence in retrieved chunks. When refusing a question, use the
+  phrase 'I cannot answer this based on the provided documents'. If calculation, CSV
+  lookup, current date, or weather is required, cite exact source filenames from retrieved
+  chunks and use tools. Your tone should be formal and policy-accurate.
+retrieval:
+  chunk_size: 600
+  chunk_overlap: 100
+  top_k: 5
+  hybrid_alpha: 0.5
+  min_score_threshold: 0.08
+  chunking_strategy: heading_recursive
+  use_query_expansion: false
+tools:
+- name: calculator
+  description: Evaluate exact arithmetic expressions, totals, percentages, discounts,
+    or unit math.
+  justification: Selected during intake for Shore HR Policy Assistant
+  required_capabilities:
+  - calculator
+- name: current_date
+  description: Get today's date, day of week, or compute date offsets (add_days) and
+    day differences (start_date, end_date).
+  justification: Selected during intake for Shore HR Policy Assistant
+  required_capabilities:
+  - current_date
+custom_tools: []
+output_contract:
+  format: structured_json
+  required_fields:
+  - answer
+  - citations
+  - refused
+  - refusal_reason
+  - confidence
+  - tools_used
+  require_citations_when_answered: true
+  max_answer_words: 220
+  refusal_phrase_prefix: I cannot answer this based on the provided documents
+must_answer_topics:
+- annual paid leave entitlement
+- sick leave & medical documentation
+- parental & compassionate leave
+- core working hours & compensatory off days for hybrid remote work
+- business travel meal reimbursement and personal vehicle business mileage
+must_refuse_topics:
+- medical or legal advice
+- undocumented executive stock option vesting rules
+- benefits not explicitly mentioned in the provided documents
+- medical/legal advice
+- Questions outside the provided document corpus
+groundability_caveats:
+- 'PARTIAL COVERAGE: ''helps calculate leave balances or travel expense claims'' is
+  only partially documented (Remote_Work_and_Expense_Policy.pdf, Code_of_Conduct_and_Benefits_Policy.pdf,
+  HR_Leave_and_Attendance_Policy.pdf).'
+docs_dir: C:\Users\LENOVO\AppData\Local\Temp\forgeai_hr_v2_i0yq269y
+created_at: '2026-11-28T07:13:30.477108+00:00'

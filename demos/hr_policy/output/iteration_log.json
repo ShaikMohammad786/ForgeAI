@@ -1,36 +1,34 @@
 [
   {
     "iteration": 1,
-    "dominant_failure_category": "wrong_refusal",
+    "dominant_failure_category": "prompt_defect",
     "failure_ids_addressed": [
-      "eval_21",
-      "eval_22",
-      "eval_23",
-      "eval_24",
-      "eval_25"
+      "eval_03",
+      "eval_20",
+      "eval_24"
     ],
-    "diagnosis_summary": "Failed to refuse out-of-scope questions related to medical advice, legal advice, and undocumented executive stock option vesting rules.",
+    "diagnosis_summary": "Dominant failure is numeric inaccuracy due to low min_score_threshold, and prompt defects related to retrieval misses.",
     "changes": [
       {
-        "field_path": "retrieval.min_score_threshold",
-        "old_value": 0.08,
-        "new_value": 0.12,
-        "rationale": "Raise score gate to enforce refusal on out-of-scope queries"
+        "field_path": "system_prompt",
+        "old_value": "(len=721)",
+        "new_value": "+ FORMAT & COMPLETENESS RULE: Include all key facts, exact numbers, and at least one valid filename in citations; return s",
+        "rationale": "Repair prompt compliance and fact/citation completeness"
       },
       {
-        "field_path": "system_prompt",
-        "old_value": "(len=755)",
-        "new_value": "+ STRICT REFUSAL RULE: When asked about unsupported or missing policies, ALWAYS set refused=true and start answer with \"I ",
-        "rationale": "Clarify answer-vs-refuse boundary"
+        "field_path": "retrieval.top_k",
+        "old_value": 5,
+        "new_value": 6,
+        "rationale": "Provide +1 chunk for multi-document synthesis"
       }
     ],
-    "score_before": 0.7318,
-    "score_after": 0.7453,
-    "pass_rate_before": 0.7037,
-    "pass_rate_after": 0.7407,
-    "accepted": true,
-    "decision_reason": "Accepted patch (+3.7pp pass rate, +0.013 composite score).",
-    "tokens_used": 67941,
-    "duration_seconds": 255.42
+    "score_before": 0.8539,
+    "score_after": 0.8029,
+    "pass_rate_before": 0.7917,
+    "pass_rate_after": 0.6667,
+    "accepted": false,
+    "decision_reason": "Rolled back patch (pass_delta=-0.125, score_delta=-0.051 did not improve over best).",
+    "tokens_used": 95184,
+    "duration_seconds": 481.77
   }
 ]

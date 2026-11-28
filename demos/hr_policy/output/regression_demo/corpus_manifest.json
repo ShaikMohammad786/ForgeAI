@@ -1,0 +1,20 @@
+{
+  "Code_of_Conduct_and_Benefits_Policy.pdf": {
+    "filename": "Code_of_Conduct_and_Benefits_Policy.pdf",
+    "sha256": "6183b1f19759f84ff20aff630ce7e349a4835d87f08cc2a790efedd8bb01ece2",
+    "size_bytes": 3019,
+    "doc_type": "pdf"
+  },
+  "HR_Leave_and_Attendance_Policy.pdf": {
+    "filename": "HR_Leave_and_Attendance_Policy.pdf",
+    "sha256": "ae275d76ab5241f29d252534bb2233ac549ae5460c639a12e98a22e03c0987bc",
+    "size_bytes": 2208,
+    "doc_type": "pdf"
+  },
+  "Remote_Work_and_Expense_Policy.pdf": {
+    "filename": "Remote_Work_and_Expense_Policy.pdf",
+    "sha256": "1bd40b71c29a8a1118080d98c6c22c7b940e800317e445e72fdc9da424cc1f0d",
+    "size_bytes": 2138,
+    "doc_type": "pdf"
+  }
+}

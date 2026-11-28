@@ -1,184 +1,128 @@
 {
-  "generated_at": "2026-11-27T15:03:04.207800+00:00",
+  "generated_at": "2026-11-28T07:52:00.784707+00:00",
   "generator_model": "qwen2.5:3b",
   "total_cases": 24,
   "cases": [
     {
       "case_id": "eval_01",
       "category": "answerable",
-      "sub_type": "single_doc",
-      "question": "What is the minimum air freight charge for a shipment?",
+      "sub_type": "csv_lookup",
+      "question": "What is the unit price of SP-MV-101?",
       "expected_behavior": "answer",
       "source_documents": [
-        "Port_Freight_and_Customs_Schedule.pdf",
         "spares_catalogue.csv"
       ],
       "key_facts": [
-        "USD 180 per shipment"
+        "unit_price_usd: 640"
       ],
       "expected_tools": [],
-      "rationale": "Tests understanding of the minimum air freight charge from Port_Freight_and_Customs_Schedule.pdf",
+      "rationale": "Tests the ability to retrieve a specific value from the spares_catalogue.csv file.",
       "verified_in_corpus": true
     },
     {
       "case_id": "eval_02",
       "category": "answerable",
-      "sub_type": "single_doc",
-      "question": "What is the maximum shelf life for Viton O-Ring Seal Kit?",
-      "expected_behavior": "answer",
-      "source_documents": [
-        "Marine_Technical_Compliance_and_Specs.pdf"
-      ],
-      "key_facts": [
-        "strict maximum shelf life of 36 months from cure date and must be stored below 25 C away from UV light"
-      ],
-      "expected_tools": [],
-      "rationale": "Tests understanding of the shelf life for Viton O-Ring Seal Kit",
-      "verified_in_corpus": true
-    },
-    {
-      "case_id": "eval_03",
-      "category": "answerable",
-      "sub_type": "single_doc",
-      "question": "What is the unit price per USD for SP-VL-204?",
+      "sub_type": "csv_lookup",
+      "question": "How many units of SP-VL-204 are available in stock?",
       "expected_behavior": "answer",
       "source_documents": [
         "spares_catalogue.csv"
       ],
       "key_facts": [
-        "unit_price_usd: examples=['640', '920', '1180', '490']",
-        "SP-VL-204 is a High-Pressure Fuel Injection Valve with unit price 1180 USD"
+        "stock_qty: 20"
       ],
       "expected_tools": [],
-      "rationale": "Tests ability to find and interpret the correct unit price from spares_catalogue.csv",
+      "rationale": "Tests the ability to retrieve a specific quantity from the spares_catalogue.csv file.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_03",
+      "category": "answerable",
+      "sub_type": "csv_lookup",
+      "question": "What is the criticality of SP-MV-104?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Marine_Technical_Compliance_and_Specs.pdf",
+        "spares_catalogue.csv"
+      ],
+      "key_facts": [
+        "criticality: CRITICAL"
+      ],
+      "expected_tools": [],
+      "rationale": "Tests the ability to retrieve a specific attribute value from the spares_catalogue.csv file.",
       "verified_in_corpus": true
     },
     {
       "case_id": "eval_04",
       "category": "answerable",
-      "sub_type": "single_doc",
-      "question": "What is the class type-approval dossier required for critical parts?",
-      "expected_behavior": "answer",
-      "source_documents": [
-        "Marine_Technical_Compliance_and_Specs.pdf"
-      ],
-      "key_facts": [
-        "Every spare part marked criticality=CRITICAL in spares_catalogue.csv MUST ship with an EN 10204 3.1 material certificate and class type-approval dossier."
-      ],
-      "expected_tools": [],
-      "rationale": "Tests understanding of the mandatory documentation for critical parts",
-      "verified_in_corpus": true
-    },
-    {
-      "case_id": "eval_05",
-      "category": "answerable",
-      "sub_type": "single_doc",
-      "question": "What is the maximum temperature SP-MV-101 can operate at?",
-      "expected_behavior": "answer",
-      "source_documents": [
-        "Marine_Technical_Compliance_and_Specs.pdf"
-      ],
-      "key_facts": [
-        "SP-MV-101 uses nickel-aluminum-bronze alloy (CuAl10Fe5Ni5) rated for 3,600 RPM continuous duty."
-      ],
-      "expected_tools": [],
-      "rationale": "Tests understanding of the maximum temperature rating for SP-MV-101",
-      "verified_in_corpus": true
-    },
-    {
-      "case_id": "eval_06",
-      "category": "answerable",
-      "sub_type": "single_doc",
-      "question": "What is the total delivery lead time from supplier and transit times?",
+      "sub_type": "csv_lookup",
+      "question": "What is the lead time for SP-VL-204?",
       "expected_behavior": "answer",
       "source_documents": [
         "Port_Freight_and_Customs_Schedule.pdf",
         "spares_catalogue.csv"
       ],
       "key_facts": [
-        "supplier_lead_time_days: examples=['10', '25', '30']",
-        "transit_time: +2 days for air freight or +14 days for sea freight."
+        "lead_time_days: 4"
       ],
       "expected_tools": [],
-      "rationale": "Tests understanding of the total delivery lead time calculation",
+      "rationale": "Tests the ability to retrieve a specific attribute value from the spares_catalogue.csv file.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_05",
+      "category": "answerable",
+      "sub_type": "csv_lookup",
+      "question": "What is the unit price of SP-MV-104?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "spares_catalogue.csv"
+      ],
+      "key_facts": [
+        "unit_price_usd: 920"
+      ],
+      "expected_tools": [],
+      "rationale": "Tests the ability to retrieve a specific value from the spares_catalogue.csv file.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_06",
+      "category": "answerable",
+      "sub_type": "csv_lookup",
+      "question": "How many units of SP-MV-104 are available in stock?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "spares_catalogue.csv"
+      ],
+      "key_facts": [
+        "stock_qty: 6"
+      ],
+      "expected_tools": [],
+      "rationale": "Tests the ability to retrieve a specific quantity from the spares_catalogue.csv file.",
       "verified_in_corpus": true
     },
     {
       "case_id": "eval_07",
       "category": "answerable",
       "sub_type": "csv_lookup",
-      "question": "What is the unit price of SP-MV-101?",
+      "question": "What is the unit price of the Starting Air Non-Return Valve?",
       "expected_behavior": "answer",
       "source_documents": [
-        "Marine_Technical_Compliance_and_Specs.pdf",
         "spares_catalogue.csv"
       ],
       "key_facts": [
-        "unit_price_usd: 640",
-        "part_id: SP-MV-101 | part_name: Main Seawater Cooling Pump Impeller"
+        "ice_usd: 1180",
+        "unit_price_usd: 490"
       ],
       "expected_tools": [],
-      "rationale": "This tests the ability to fetch and verify a specific unit price from the catalogue CSV.",
+      "rationale": "This tests whether the agent can accurately retrieve and use specific unit price information from a CSV file.",
       "verified_in_corpus": true
     },
     {
       "case_id": "eval_08",
       "category": "answerable",
       "sub_type": "csv_lookup",
-      "question": "What is the criticality level of SP-VL-204?",
-      "expected_behavior": "answer",
-      "source_documents": [
-        "Marine_Technical_Compliance_and_Specs.pdf",
-        "spares_catalogue.csv"
-      ],
-      "key_facts": [
-        "criticality: CRITICAL",
-        "part_id: SP-VL-204 | part_name: High-Pressure Fuel Injection Valve"
-      ],
-      "expected_tools": [],
-      "rationale": "This tests the ability to fetch and verify a specific criticality level from the catalogue CSV.",
-      "verified_in_corpus": true
-    },
-    {
-      "case_id": "eval_09",
-      "category": "answerable",
-      "sub_type": "csv_lookup",
-      "question": "What is the unit price of SP-GS-312?",
-      "expected_behavior": "answer",
-      "source_documents": [
-        "spares_catalogue.csv"
-      ],
-      "key_facts": [
-        "unit_price_usd: 420",
-        "part_id: SP-GS-312 | part_name: Cylinder Head Gasket Set (6-Pack)"
-      ],
-      "expected_tools": [],
-      "rationale": "This tests the ability to fetch and verify a specific unit price from the catalogue CSV.",
-      "verified_in_corpus": true
-    },
-    {
-      "case_id": "eval_10",
-      "category": "answerable",
-      "sub_type": "csv_lookup",
-      "question": "What is the lead time for SP-PM-508?",
-      "expected_behavior": "answer",
-      "source_documents": [
-        "Port_Freight_and_Customs_Schedule.pdf",
-        "spares_catalogue.csv"
-      ],
-      "key_facts": [
-        "lead_time_days: 3",
-        "part_id: SP-PM-508 | part_name: Bilge Oily Water Separator Filter Element"
-      ],
-      "expected_tools": [],
-      "rationale": "This tests the ability to fetch and verify a specific lead time from the catalogue CSV.",
-      "verified_in_corpus": true
-    },
-    {
-      "case_id": "eval_11",
-      "category": "answerable",
-      "sub_type": "csv_lookup",
-      "question": "What is the criticality level of SP-EX-603?",
+      "question": "What is the criticality level of the Cylinder Head Gasket Set (6-Pack)?",
       "expected_behavior": "answer",
       "source_documents": [
         "Marine_Technical_Compliance_and_Specs.pdf",
@@ -187,18 +131,35 @@
         "Supplier_SLA_and_Pricing_Terms.pdf"
       ],
       "key_facts": [
-        "criticality: STANDARD",
-        "part_id: SP-EX-603 | part_name: Exhaust Manifold Expansion Bellows"
+        "criticality: STANDARD"
       ],
       "expected_tools": [],
-      "rationale": "This tests the ability to fetch and verify a specific criticality level from the catalogue CSV.",
+      "rationale": "This tests whether the agent can identify and extract a specific attribute from the CSV file.",
       "verified_in_corpus": true
     },
     {
-      "case_id": "eval_12",
+      "case_id": "eval_09",
       "category": "answerable",
       "sub_type": "csv_lookup",
-      "question": "What is the minimum order quantity for SP-EX-603?",
+      "question": "What is the lead time for the Turbocharger Rotor Bearing Kit?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Port_Freight_and_Customs_Schedule.pdf",
+        "spares_catalogue.csv"
+      ],
+      "key_facts": [
+        "lead_time_days: 9",
+        "part_id: SP-GS-309 | part_name: Turbocharger Rotor Bearing Kit | category: Turbocharger | engine_model: ABB-TPL77 | supplier_id: SUP-SINGAPORE | unit_price_usd: 3450 | moq: 1 | stock_qty: 3 | lead_time_days: 9 | weight_kg: 14.0 | criticality: CRITICAL"
+      ],
+      "expected_tools": [],
+      "rationale": "This tests whether the agent can locate and use specific data points from a CSV file.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_10",
+      "category": "answerable",
+      "sub_type": "csv_lookup",
+      "question": "What is the minimum order quantity for the Lube Oil Purifier Bowl Disc Stack?",
       "expected_behavior": "answer",
       "source_documents": [
         "spares_catalogue.csv",
@@ -206,144 +167,99 @@
       ],
       "key_facts": [
         "moq: 1",
-        "part_id: SP-EX-603 | part_name: Exhaust Manifold Expansion Bellows"
+        "part_id: SP-PM-501 | part_name: Lube Oil Purifier Bowl Disc Stack | category: Separators | engine_model: ALFA-S835 | supplier_id: SUP-NORDIC | unit_price_usd: 2890 | moq: 1 | stock_qty: 2 | weight_kg: 19.5 | criticali"
       ],
       "expected_tools": [],
-      "rationale": "This tests the ability to fetch and verify a specific minimum order quantity from the catalogue CSV.",
+      "rationale": "This tests whether the agent can find and use a specific attribute from the CSV file.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_11",
+      "category": "answerable",
+      "sub_type": "csv_lookup",
+      "question": "What is the unit price of the Main Switchboard AVR Voltage Regulator?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "spares_catalogue.csv"
+      ],
+      "key_facts": [
+        "unit_price_usd: 2250",
+        "part_id: SP-EL-415 | part_name: Main Switchboard AVR Voltage Regulator | category: Electrical | engine_model: HYUNDAI-HIMSEN | supplier_id: SUP-SINGAPORE | unit_price_usd: 2250 | moq: 1 | stock_qty: 4 | weight_kg: 3.8 | criticality: CRITICAL"
+      ],
+      "expected_tools": [],
+      "rationale": "This tests whether the agent can retrieve and use a specific unit price from the CSV file.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_12",
+      "category": "edge_case",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What is the total landed cost for part SP-VL-204 if it's ordered with supplier SUP-NORDIC, has a quantity of 3 and a unit price of $1180?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Marine_Technical_Compliance_and_Specs.pdf",
+        "Port_Freight_and_Customs_Schedule.pdf",
+        "spares_catalogue.csv",
+        "Supplier_SLA_and_Pricing_Terms.pdf"
+      ],
+      "key_facts": [
+        "Row 3 -> part_id: SP-VL-204 | part_name: High-Pressure Fuel Injection Valve",
+        "supplier_id: SUP-NORDIC receives a 5% unit price discount when total quantity on a single part line is 10 units or more.",
+        "unit_price_usd: 1180",
+        "quantity from spares_catalogue.csv: 3"
+      ],
+      "expected_tools": [],
+      "rationale": "This question requires synthesizing information from both the catalogue and supplier terms documents to calculate the landed cost.",
       "verified_in_corpus": true
     },
     {
       "case_id": "eval_13",
       "category": "edge_case",
       "sub_type": "multi_doc_synthesis",
-      "question": "What is the total landed cost if 10 units of Main Seawater Cooling Pump Impeller (SP-MV-101) are ordered from SUP-NORDIC with a unit price of $640?",
+      "question": "What is the total landed cost for part SP-MV-104 if it's ordered with supplier SUP-SINGAPORE, has a quantity of 5 and a unit price of $920?",
       "expected_behavior": "answer",
       "source_documents": [
+        "Marine_Technical_Compliance_and_Specs.pdf",
+        "Port_Freight_and_Customs_Schedule.pdf",
         "spares_catalogue.csv",
         "Supplier_SLA_and_Pricing_Terms.pdf"
       ],
       "key_facts": [
-        "Main Seawater Cooling Pump Impeller (SP-MV-101) is in the spares_catalogue.csv with unit_price_usd = '640'.",
-        "Orders placed with SUP-NORDIC receive a 5% unit price discount when total quantity on a single part line is 10 units or more."
+        "Row 2 -> part_id: SP-MV-104 | part_name: Bronze Butterfly Sea Chest Valve DN150",
+        "supplier_id: SUP-SINGAPORE receives an 8% order discount whenever the pre-freight merchandise subtotal reaches USD 15,000 or higher.",
+        "unit_price_usd: 920",
+        "quantity from spares_catalogue.csv: 5"
       ],
       "expected_tools": [],
-      "rationale": "This question requires synthesis of information from two documents to calculate the landed cost after applying the discount for ordering in bulk.",
+      "rationale": "This question requires synthesizing information from both the catalogue and supplier terms documents to calculate the landed cost.",
       "verified_in_corpus": true
     },
     {
       "case_id": "eval_14",
-      "category": "edge_case",
-      "sub_type": "multi_doc_synthesis",
-      "question": "What is the minimum charge for consolidated sea freight if a shipment weighs 500 kg?",
-      "expected_behavior": "answer",
-      "source_documents": [
-        "Port_Freight_and_Customs_Schedule.pdf"
-      ],
-      "key_facts": [
-        "Consolidated sea freight is billed at USD 1.90 per kg with a minimum charge of USD 95 per shipment."
-      ],
+      "category": "out_of_scope",
+      "sub_type": "near_domain_out_of_scope | unrelated_domain",
+      "question": "Could you provide me with a legal opinion on whether our fleet can operate in adverse weather conditions based on the documents provided?",
+      "expected_behavior": "refuse",
+      "source_documents": [],
+      "key_facts": [],
       "expected_tools": [],
-      "rationale": "This question requires synthesis of information from two documents to calculate the minimum charge for a shipment with a given weight.",
+      "rationale": "The assistant is supposed to handle only pre-defined data from the provided corpus and must refuse queries about external or unlisted legal opinions.",
       "verified_in_corpus": true
     },
     {
       "case_id": "eval_15",
       "category": "out_of_scope",
-      "sub_type": "near_domain_out_of_scope",
-      "question": "Can you provide a discount estimate for an emergency credit override to expedite the delivery of critical spare parts?",
+      "sub_type": "near_domain_out_of_scope | unrelated_domain",
+      "question": "Could you provide me with a list of all parts that are currently out of stock?",
       "expected_behavior": "refuse",
       "source_documents": [],
       "key_facts": [],
       "expected_tools": [],
-      "rationale": "The assistant is designed to handle only pre-approved orders and does not process emergency credits or overrides.",
+      "rationale": "The assistant is supposed to handle only pre-defined data from the provided corpus and must refuse queries about unlisted or external stock status.",
       "verified_in_corpus": true
     },
     {
       "case_id": "eval_16",
-      "category": "out_of_scope",
-      "sub_type": "near_domain_out_of_scope",
-      "question": "Could you please calculate the landed cost for spare parts that are outside our current supplier discount tiers?",
-      "expected_behavior": "refuse",
-      "source_documents": [],
-      "key_facts": [],
-      "expected_tools": [],
-      "rationale": "The assistant is designed to use only pre-approved and within-tier discounts from suppliers listed in the provided documents.",
-      "verified_in_corpus": true
-    },
-    {
-      "case_id": "eval_17",
-      "category": "out_of_scope",
-      "sub_type": "near_domain_out_of_scope",
-      "question": "What are the estimated arrival dates for spare parts that do not have compliance certificates?",
-      "expected_behavior": "refuse",
-      "source_documents": [],
-      "key_facts": [],
-      "expected_tools": [],
-      "rationale": "The assistant is designed to refuse orders without required compliance certificates, which include weather forecasts and legal documents.",
-      "verified_in_corpus": true
-    },
-    {
-      "case_id": "eval_18",
-      "category": "out_of_scope",
-      "sub_type": "near_domain_out_of_scope",
-      "question": "Can you provide a comparison of our current supplier pricing with those from other known competitors?",
-      "expected_behavior": "refuse",
-      "source_documents": [],
-      "key_facts": [],
-      "expected_tools": [],
-      "rationale": "The assistant is designed to only use the provided catalogue and supplier information, not external competitor data.",
-      "verified_in_corpus": true
-    },
-    {
-      "case_id": "eval_19",
-      "category": "out_of_scope",
-      "sub_type": "near_domain_out_of_scope",
-      "question": "How would you handle a situation where a supplier's SLA exceeds our current contract terms?",
-      "expected_behavior": "refuse",
-      "source_documents": [],
-      "key_facts": [],
-      "expected_tools": [],
-      "rationale": "The assistant is designed to only use the provided Supplier Service Level Agreements (SLAs) and pricing terms, not external or unknown SLAs.",
-      "verified_in_corpus": true
-    },
-    {
-      "case_id": "eval_20",
-      "category": "out_of_scope",
-      "sub_type": "near_domain_out_of_scope",
-      "question": "What are the legal implications of using a supplier outside our current contract terms?",
-      "expected_behavior": "refuse",
-      "source_documents": [],
-      "key_facts": [],
-      "expected_tools": [],
-      "rationale": "The assistant is designed to only use the provided Supplier SLA and pricing terms, not external or unknown legal documents.",
-      "verified_in_corpus": true
-    },
-    {
-      "case_id": "eval_21",
-      "category": "out_of_scope",
-      "sub_type": "near_domain_out_of_scope",
-      "question": "How would you handle a situation where a supplier's compliance certificate expires before the order is placed?",
-      "expected_behavior": "refuse",
-      "source_documents": [],
-      "key_facts": [],
-      "expected_tools": [],
-      "rationale": "The assistant is designed to only use the provided compliance certificates, not external or unknown ones.",
-      "verified_in_corpus": true
-    },
-    {
-      "case_id": "eval_22",
-      "category": "out_of_scope",
-      "sub_type": "near_domain_out_of_scope",
-      "question": "Can you provide a discount estimate for spare parts that are outside our current supplier discount tiers and do not have compliance certificates?",
-      "expected_behavior": "refuse",
-      "source_documents": [],
-      "key_facts": [],
-      "expected_tools": [],
-      "rationale": "The assistant is designed to only use pre-approved discounts from suppliers with valid compliance certificates, not external or unknown ones.",
-      "verified_in_corpus": true
-    },
-    {
-      "case_id": "eval_23",
       "category": "answerable",
       "sub_type": "single_doc",
       "question": "According to Marine_Technical_Compliance_and_Specs.pdf, what are the details regarding 2.1 Mandatory Class Certification for Critical Parts?",
@@ -352,7 +268,119 @@
         "Marine_Technical_Compliance_and_Specs.pdf"
       ],
       "key_facts": [
-        "Marine Engineering \u2014 Technical Compliance & Material"
+        "Marine Engineering \u2014 Technical Compliance & Material Certification (PROC-DOC-02) Effective Year: 2026 | Classification Compliance: IACS / DNV / Lloyd's Register 2.1 Mandatory Class"
+      ],
+      "expected_tools": [],
+      "rationale": "Corpus-anchored fallback verification case.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_17",
+      "category": "edge_case",
+      "sub_type": "ambiguous_phrasing",
+      "question": "In Marine_Technical_Compliance_and_Specs.pdf (2.1 Mandatory Class Certification for Critical Parts), what rule or value is specified for Items marked STANDARD require?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Marine_Technical_Compliance_and_Specs.pdf"
+      ],
+      "key_facts": [
+        "Items marked STANDARD require only supplier Certificate of Conformity (CoC) unless ordered for dry-dock class renewal."
+      ],
+      "expected_tools": [],
+      "rationale": "Corpus-anchored fallback verification case.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_18",
+      "category": "edge_case",
+      "sub_type": "ambiguous_phrasing",
+      "question": "In Marine_Technical_Compliance_and_Specs.pdf (2.1 Mandatory Class Certification for Critical Parts), what rule or value is specified for Operating Limits Material Specifications?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Marine_Technical_Compliance_and_Specs.pdf"
+      ],
+      "key_facts": [
+        "2.2 Operating Limits & Material Specifications SP-VL-204 (High-Pressure Fuel Injection Valve) is rated up to 1,200 bar injection pressure and 180 C fuel preheat temperature; nozzle"
+      ],
+      "expected_tools": [],
+      "rationale": "Corpus-anchored fallback verification case.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_19",
+      "category": "edge_case",
+      "sub_type": "ambiguous_phrasing",
+      "question": "In Marine_Technical_Compliance_and_Specs.pdf (2.1 Mandatory Class Certification for Critical Parts), what rule or value is specified for SP-MV-101 Main Seawater Cooling?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Marine_Technical_Compliance_and_Specs.pdf"
+      ],
+      "key_facts": [
+        "SP-MV-101 (Main Seawater Cooling Pump Impeller) uses nickel-aluminum-bronze alloy (CuAl10Fe5Ni5) rated for 3,600 RPM continuous duty."
+      ],
+      "expected_tools": [],
+      "rationale": "Corpus-anchored fallback verification case.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_20",
+      "category": "answerable",
+      "sub_type": "single_doc",
+      "question": "According to Port_Freight_and_Customs_Schedule.pdf, what are the details regarding 3.1 Air & Sea Freight Rate Structure?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Port_Freight_and_Customs_Schedule.pdf"
+      ],
+      "key_facts": [
+        "Global Marine Logistics \u2014 Port Freight Rates & Customs Lead Times (PROC-DOC-03) Effective Year: 2026 | Hub Ports: Singapore, Rotterdam, Fujairah 3.1 Air & Sea Freight Rate Structur"
+      ],
+      "expected_tools": [],
+      "rationale": "Corpus-anchored fallback verification case.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_21",
+      "category": "edge_case",
+      "sub_type": "ambiguous_phrasing",
+      "question": "In Port_Freight_and_Customs_Schedule.pdf (3.1 Air & Sea Freight Rate Structure), what rule or value is specified for Consolidated freight billed minimum?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Port_Freight_and_Customs_Schedule.pdf"
+      ],
+      "key_facts": [
+        "Consolidated sea freight is billed at USD 1.90 per kg with a minimum charge of USD 95 per shipment."
+      ],
+      "expected_tools": [],
+      "rationale": "Corpus-anchored fallback verification case.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_22",
+      "category": "edge_case",
+      "sub_type": "ambiguous_phrasing",
+      "question": "In Port_Freight_and_Customs_Schedule.pdf (3.1 Air & Sea Freight Rate Structure), what rule or value is specified for Port Customs Handling Fees?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Port_Freight_and_Customs_Schedule.pdf"
+      ],
+      "key_facts": [
+        "3.2 Port Customs Handling Fees & Total Lead Time Flat port customs clearance & launch delivery fees are: Singapore USD 140, Rotterdam USD 195, and Fujairah USD 210."
+      ],
+      "expected_tools": [],
+      "rationale": "Corpus-anchored fallback verification case.",
+      "verified_in_corpus": true
+    },
+    {
+      "case_id": "eval_23",
+      "category": "edge_case",
+      "sub_type": "ambiguous_phrasing",
+      "question": "In Port_Freight_and_Customs_Schedule.pdf (3.1 Air & Sea Freight Rate Structure), what rule or value is specified for Total delivery lead time?",
+      "expected_behavior": "answer",
+      "source_documents": [
+        "Port_Freight_and_Customs_Schedule.pdf"
+      ],
+      "key_facts": [
+        "Total delivery lead time equals supplier lead_time_days (from spares_catalogue.csv) PLUS transit time: +2 days for air freight or +14 days for sea freight."
       ],
       "expected_tools": [],
       "rationale": "Corpus-anchored fallback verification case.",
@@ -360,15 +388,15 @@
     },
     {
       "case_id": "eval_24",
-      "category": "edge_case",
-      "sub_type": "ambiguous_phrasing",
-      "question": "In Marine_Technical_Compliance_and_Specs.pdf (2.1 Mandatory Class Certification for Critical Parts), what rule or value is specified for Effective Year 2026 Classification?",
+      "category": "answerable",
+      "sub_type": "single_doc",
+      "question": "According to spares_catalogue.csv, what are the details regarding CSV Schema & Columns?",
       "expected_behavior": "answer",
       "source_documents": [
-        "Marine_Technical_Compliance_and_Specs.pdf"
+        "spares_catalogue.csv"
       ],
       "key_facts": [
-        "Effective Year: 2026 | Classification Compliance: IACS / DNV / Lloyd's Register"
+        "- part_id: examples=['SP-MV-101', 'SP-MV-104', 'SP-VL-204', 'SP-VL-209']"
       ],
       "expected_tools": [],
       "rationale": "Corpus-anchored fallback verification case.",

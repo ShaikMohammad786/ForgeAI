@@ -196,6 +196,7 @@ def chat(
         Panel.fit(
             f"[bold]{runtime.agent.name}[/bold] (model: `{runtime.llm.model_name}`)\n"
             f"Tools: {[t.name for t in runtime.agent.tools] or ['none']}\n"
+            f"Custom Macros: {[ct.name for ct in runtime.agent.custom_tools] or ['none']}\n"
             f"Type 'exit' or 'quit' to stop.",
             title="ForgeAI Chat Runner",
         )

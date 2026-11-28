@@ -1,0 +1,1273 @@
+{
+  "iteration": 2,
+  "label": "Regression Check (New Docs)",
+  "total_cases": 24,
+  "passed_cases": 8,
+  "pass_rate": 0.3333,
+  "mean_composite_score": 0.5913,
+  "mean_groundedness": 0.6604,
+  "mean_fact_recall": 0.4557,
+  "refusal_accuracy": 0.75,
+  "contract_adherence": 1.0,
+  "by_category": {
+    "answerable": {
+      "total": 13.0,
+      "passed": 1.0,
+      "pass_rate": 0.0769,
+      "mean_score": 0.4324
+    },
+    "out_of_scope": {
+      "total": 2.0,
+      "passed": 1.0,
+      "pass_rate": 0.5,
+      "mean_score": 0.625
+    },
+    "edge_case": {
+      "total": 9.0,
+      "passed": 6.0,
+      "pass_rate": 0.6667,
+      "mean_score": 0.8132
+    }
+  },
+  "failure_counts": {
+    "retrieval_miss": 3,
+    "prompt_defect": 4,
+    "hallucination": 3,
+    "wrong_refusal": 6
+  },
+  "verdicts": [
+    {
+      "case_id": "eval_01",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What is the maximum number of unused annual leave days that shore staff can carry forward into the next calendar year?",
+      "expected_behavior": "answer",
+      "actual_answer": "The maximum number of unused annual leave days that shore staff can carry forward into the next calendar year is 3.",
+      "actual_refused": false,
+      "actual_citations": [
+        {
+          "source": "HR_Leave_and_Attendance_Policy.pdf",
+          "excerpt": "Carry forward is reduced to a maximum of 3 unused annual leave days into Q1 before February 28."
+        }
+      ],
+      "actual_tools_used": [],
+      "retrieved_sources": [
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Remote_Work_and_Expense_Policy.pdf",
+        "Code_of_Conduct_and_Benefits_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.9468,
+      "passed": false,
+      "failure_category": "prompt_defect",
+      "failure_reason": "missed expected facts despite retrieval (recall=0.25); numeric inaccuracy (0.00)",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": true,
+        "citation_valid": true,
+        "numeric_accuracy": 0.0,
+        "fact_recall": 0.25,
+        "groundedness": 0.75,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 0.525
+      },
+      "fact_checks": [
+        {
+          "fact": "Employees may carry forward a maximum of 5 unused annual leave days into the next calendar year.",
+          "status": "contradicted",
+          "evidence": "The policy states 'Carry forward is reduced to a maximum of 3 unused annual leave days into Q1 before February 28.'"
+        },
+        {
+          "fact": "Any carried-forward days not used by March 31 are forfeited without cash payout.",
+          "status": "supported",
+          "evidence": "The policy states 'Any carried-forward days not used by March 31 are forfeited without cash payout.'"
+        }
+      ],
+      "latency_ms": 3030.98
+    },
+    {
+      "case_id": "eval_02",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What is the total amount of paid sick leave that full-time permanent shore staff receive per calendar year?",
+      "expected_behavior": "answer",
+      "actual_answer": "Full-time permanent shore staff receive 12 days of paid sick leave per calendar year without carryover.",
+      "actual_refused": false,
+      "actual_citations": [
+        {
+          "source": "HR_Leave_and_Attendance_Policy.pdf",
+          "excerpt": "Shore employees receive 12 days of paid sick leave per calendar year without carryover."
+        }
+      ],
+      "actual_tools_used": [],
+      "retrieved_sources": [
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "Remote_Work_and_Expense_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.9298,
+      "passed": false,
+      "failure_category": "prompt_defect",
+      "failure_reason": "numeric inaccuracy (0.33)",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": true,
+        "citation_valid": true,
+        "numeric_accuracy": 0.333,
+        "fact_recall": 0.5,
+        "groundedness": 1.0,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 0.7249
+      },
+      "fact_checks": [
+        {
+          "fact": "Shore employees receive 12 days of paid sick leave per calendar year without carryover.",
+          "status": "supported",
+          "evidence": "Retrieved Evidence: 'Shore employees receive 12 days of paid sick leave per calendar year without carryover.'"
+        },
+        {
+          "fact": "Full-time permanent shore staff accrue 24 working days of paid annual leave per calendar year (2.0 days per completed month of service).",
+          "status": "missing",
+          "evidence": ""
+        }
+      ],
+      "latency_ms": 3009.64
+    },
+    {
+      "case_id": "eval_03",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What is the probation notice period for Job Band D and above shore employees?",
+      "expected_behavior": "answer",
+      "actual_answer": "For Job Bands D and above, the standard written resignation notice period is 60 calendar days.",
+      "actual_refused": false,
+      "actual_citations": [
+        {
+          "source": "HR_Leave_and_Attendance_Policy.pdf",
+          "excerpt": "3.4 Resignation Notice Periods After probation, standard written resignation notice is 30 calendar days for Job Bands A through C and 60 calendar days for Job Band D and above."
+        }
+      ],
+      "actual_tools_used": [],
+      "retrieved_sources": [
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Remote_Work_and_Expense_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.9071,
+      "passed": false,
+      "failure_category": "prompt_defect",
+      "failure_reason": "missing/invalid citation; missed expected facts despite retrieval (recall=0.40); numeric inaccuracy (0.25)",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": true,
+        "citation_valid": false,
+        "numeric_accuracy": 0.25,
+        "fact_recall": 0.4,
+        "groundedness": 0.75,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 0.465
+      },
+      "fact_checks": [
+        {
+          "fact": "After probation, standard written resignation notice is 30 calendar days for Job Bands A through C and 60 calendar days for Job Band D and above.",
+          "status": "supported",
+          "evidence": "[Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest]"
+        },
+        {
+          "fact": "Unused accrued annual leave (excluding forfeited prior-year days past March 31 per HR_Leave_and_Attendance_Policy.pdf) is paid out on final settlement.",
+          "status": "supported",
+          "evidence": "[Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest]"
+        },
+        {
+          "fact": "Shore staff must never solicit gifts from suppliers or port agents.",
+          "status": "supported",
+          "evidence": "[Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest]"
+        },
+        {
+          "fact": "Cash or cash-equivalent gifts (including gift cards) of any value are strictly prohibited.",
+          "status": "supported",
+          "evidence": "[Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest]"
+        },
+        {
+          "fact": "Officer.",
+          "status": "missing",
+          "evidence": ""
+        }
+      ],
+      "latency_ms": 3441.92
+    },
+    {
+      "case_id": "eval_04",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What is the total amount of paid sick leave that new hires can receive during their probation period?",
+      "expected_behavior": "answer",
+      "actual_answer": "New hires do not have a specific mention of sick leave entitlement in the provided documents. Their sick leave policy applies to full-time permanent shore staff, and no information is given about probationary periods.",
+      "actual_refused": true,
+      "actual_citations": [],
+      "actual_tools_used": [],
+      "retrieved_sources": [
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "Remote_Work_and_Expense_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.7612,
+      "passed": false,
+      "failure_category": "wrong_refusal",
+      "failure_reason": "False refusal on answerable question.",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": false,
+        "citation_valid": false,
+        "numeric_accuracy": 0.0,
+        "fact_recall": 0.0,
+        "groundedness": 0.0,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 0.1
+      },
+      "fact_checks": [],
+      "latency_ms": 2519.22
+    },
+    {
+      "case_id": "eval_05",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What is the maximum number of unused annual leave days that can be carried forward into the next calendar year for new hires during their probation period?",
+      "expected_behavior": "answer",
+      "actual_answer": "3",
+      "actual_refused": false,
+      "actual_citations": [
+        {
+          "source": "HR_Leave_and_Attendance_Policy.pdf",
+          "excerpt": "Carry forward is reduced to a maximum of 3 unused annual leave days into Q1 before February 28."
+        }
+      ],
+      "actual_tools_used": [],
+      "retrieved_sources": [
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "Remote_Work_and_Expense_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.8346,
+      "passed": false,
+      "failure_category": "retrieval_miss",
+      "failure_reason": "Required facts/sources (['Code_of_Conduct_and_Benefits_Policy.pdf', 'HR_Leave_and_Attendance_Policy.pdf', 'Remote_Work_and_Expense_Policy.pdf']) missing from top-5 retrieved chunks (top_score=0.83).",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": true,
+        "citation_valid": true,
+        "numeric_accuracy": 0.0,
+        "fact_recall": 0.375,
+        "groundedness": 1.0,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 0.6312
+      },
+      "fact_checks": [
+        {
+          "fact": "Employees may carry forward a maximum of 5 unused annual leave days into the next calendar year.",
+          "status": "supported",
+          "evidence": "HR_Leave_and_Attendance_Policy.pdf, Page 1, Section: 1.1 Revised Annual Paid Leave Entitlement"
+        },
+        {
+          "fact": "During the initial 90-day probationary period, new hires accrue leave but may only take paid annual leave after completing 60 calendar days unless pre-approved in writing by HR.",
+          "status": "supported",
+          "evidence": "Code_of_Conduct_and_Benefits_Policy.pdf, Page 1, Section: 3.4 Resignation Notice Periods"
+        },
+        {
+          "fact": "Unused accrued annual leave (excluding forfeited prior-year days past March 31 per HR_Leave_and_Attendance_Policy.pdf) is paid out on final settlement.",
+          "status": "supported",
+          "evidence": "Code_of_Conduct_and_Benefits_Policy.pdf, Page 1, Section: 3.2 Ethics Reporting & Anti-Retaliation"
+        },
+        {
+          "fact": "Cash or cash-equivalent gifts (including gift cards) of any value are strictly prohibited.",
+          "status": "contradicted",
+          "evidence": "Code_of_Conduct_and_Benefits_Policy.pdf, Page 1, Section: 3.1 Gifts, Hospitality & Conflict of Interest"
+        }
+      ],
+      "latency_ms": 2708.92
+    },
+    {
+      "case_id": "eval_06",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "How many days of fully paid parental leave are available to primary caregivers after 6 months of continuous shore employment?",
+      "expected_behavior": "answer",
+      "actual_answer": "I cannot answer this based on the provided documents.",
+      "actual_refused": true,
+      "actual_citations": [],
+      "actual_tools_used": [],
+      "retrieved_sources": [
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Code_of_Conduct_and_Benefits_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.7393,
+      "passed": false,
+      "failure_category": "wrong_refusal",
+      "failure_reason": "False refusal on answerable question.",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": false,
+        "citation_valid": false,
+        "numeric_accuracy": 0.0,
+        "fact_recall": 0.0,
+        "groundedness": 0.0,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 0.1
+      },
+      "fact_checks": [],
+      "latency_ms": 1919.71
+    },
+    {
+      "case_id": "eval_07",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What is the standard shore office hours, including mandatory core collaboration hours?",
+      "expected_behavior": "answer",
+      "actual_answer": "The provided documents do not contain information regarding the standard shore office hours or mandatory core collaboration hours.",
+      "actual_refused": true,
+      "actual_citations": [],
+      "actual_tools_used": [],
+      "retrieved_sources": [
+        "Remote_Work_and_Expense_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Code_of_Conduct_and_Benefits_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.6844,
+      "passed": false,
+      "failure_category": "wrong_refusal",
+      "failure_reason": "False refusal on answerable question.",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": false,
+        "citation_valid": false,
+        "numeric_accuracy": 0.0,
+        "fact_recall": 0.0,
+        "groundedness": 0.0,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 0.1
+      },
+      "fact_checks": [],
+      "latency_ms": 2361.77
+    },
+    {
+      "case_id": "eval_08",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "How many days of paid leave do secondary caregivers receive for parental leave?",
+      "expected_behavior": "answer",
+      "actual_answer": "The provided documents do not contain information about the number of days of paid leave secondary caregivers receive for parental leave.",
+      "actual_refused": true,
+      "actual_citations": [],
+      "actual_tools_used": [],
+      "retrieved_sources": [
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Code_of_Conduct_and_Benefits_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.6185,
+      "passed": false,
+      "failure_category": "wrong_refusal",
+      "failure_reason": "False refusal on answerable question.",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": false,
+        "citation_valid": false,
+        "numeric_accuracy": 0.0,
+        "fact_recall": 0.0,
+        "groundedness": 0.0,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 0.1
+      },
+      "fact_checks": [],
+      "latency_ms": 2402.45
+    },
+    {
+      "case_id": "eval_09",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What is the maximum amount for home-office ergonomic equipment stipend per 24 months?",
+      "expected_behavior": "answer",
+      "actual_answer": "The maximum amount for home-office ergonomic equipment stipend per 24 months is USD 5750.",
+      "actual_refused": false,
+      "actual_citations": [
+        {
+          "source": "Remote_Work_and_Expense_Policy.pdf",
+          "excerpt": "The prior home-office equipment stipend program has been discontinued for 2026."
+        }
+      ],
+      "actual_tools_used": [
+        "calculator"
+      ],
+      "retrieved_sources": [
+        "Remote_Work_and_Expense_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Code_of_Conduct_and_Benefits_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.7663,
+      "passed": false,
+      "failure_category": "hallucination",
+      "failure_reason": "Ungrounded claims/numbers detected: unverified numeric claim",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": true,
+        "citation_valid": true,
+        "numeric_accuracy": 0.5,
+        "fact_recall": 0.5,
+        "groundedness": 0.55,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 0.6375
+      },
+      "fact_checks": [
+        {
+          "fact": "The maximum amount for home-office ergonomic equipment stipend per 24 months is USD 5750.",
+          "status": "supported",
+          "evidence": "CANDIDATE ANSWER: The maximum amount for home-office ergonomic equipment stipend per 24 months is USD 5750."
+        },
+        {
+          "fact": "The eligible hybrid shore staff may claim a one-time home-office ergonomic equipment stipend of up to USD 450 once every 24 months.",
+          "status": "supported",
+          "evidence": "EXPECTED KEY FACTS: Eligible hybrid shore staff may claim a one-time home-office ergonomic equipment stipend of up to USD 450 once every 24 months."
+        },
+        {
+          "fact": "The maximum amount for sick leave is 12 days per calendar year.",
+          "status": "supported",
+          "evidence": "CANDIDATE ANSWER: Shore employees receive 12 days of paid sick leave per calendar year without carryover."
+        }
+      ],
+      "latency_ms": 4216.23
+    },
+    {
+      "case_id": "eval_10",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What is the standard hotel accommodation cap per night excluding taxes?",
+      "expected_behavior": "answer",
+      "actual_answer": "USD 220 per night",
+      "actual_refused": false,
+      "actual_citations": [
+        {
+          "source": "Remote_Work_and_Expense_Policy.pdf",
+          "excerpt": "Domestic travel meal reimbursement is capped at USD 55 per day and hotel stays at USD 220 per night."
+        },
+        {
+          "source": "HR_Leave_and_Attendance_Policy.pdf",
+          "excerpt": "A licensed physician's medical certificate is mandatory for any sick leave absence exceeding 3 consecutive working days."
+        }
+      ],
+      "actual_tools_used": [
+        "calculator"
+      ],
+      "retrieved_sources": [
+        "Remote_Work_and_Expense_Policy.pdf",
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.5801,
+      "passed": true,
+      "failure_category": "none",
+      "failure_reason": "",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": true,
+        "citation_valid": true,
+        "numeric_accuracy": 1.0,
+        "fact_recall": 0.5,
+        "groundedness": 1.0,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 0.825
+      },
+      "fact_checks": [
+        {
+          "fact": "Standard hotel accommodation is capped at USD 220 per night excluding taxes.",
+          "status": "supported",
+          "evidence": "The retrieved evidence states 'Domestic travel meal reimbursement is capped at USD 55 per day and hotel stays at USD 220 per night.'"
+        },
+        {
+          "fact": "USD 220 per night is the standard cap excluding taxes.",
+          "status": "supported",
+          "evidence": "The retrieved evidence directly states 'Domestic travel meal reimbursement is capped at USD 55 per day and hotel stays at USD 220 per night.'"
+        }
+      ],
+      "latency_ms": 5355.21
+    },
+    {
+      "case_id": "eval_11",
+      "category": "answerable",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What is the reimbursement rate for personal vehicle business mileage?",
+      "expected_behavior": "answer",
+      "actual_answer": "The reimbursement rate for personal vehicle business mileage is not provided in the given documents.",
+      "actual_refused": true,
+      "actual_citations": [],
+      "actual_tools_used": [],
+      "retrieved_sources": [
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "Remote_Work_and_Expense_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.5754,
+      "passed": false,
+      "failure_category": "wrong_refusal",
+      "failure_reason": "False refusal on answerable question.",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": false,
+        "citation_valid": false,
+        "numeric_accuracy": 0.0,
+        "fact_recall": 0.0,
+        "groundedness": 0.0,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 0.1
+      },
+      "fact_checks": [],
+      "latency_ms": 2198.3
+    },
+    {
+      "case_id": "eval_12",
+      "category": "edge_case",
+      "sub_type": "tool_calculation",
+      "question": "How many days of paid sick leave does a shore employee receive per calendar year, including any carry-over days if they have 12 days already used?",
+      "expected_behavior": "answer",
+      "actual_answer": "A shore employee receives up to 13 days of paid sick leave per calendar year, considering the possibility of carry-over from previous years. However, this is contingent on having less than or equal to a maximum of 3 unused annual leave days in Q1 before February 28.",
+      "actual_refused": false,
+      "actual_citations": [
+        {
+          "source": "HR_Leave_and_Attendance_Policy.pdf",
+          "excerpt": "Shore employees receive 12 days of paid sick leave per calendar year without carryover. Carry forward is reduced to a maximum of 3 unused annual leave days into Q1 before February "
+        }
+      ],
+      "actual_tools_used": [],
+      "retrieved_sources": [
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Code_of_Conduct_and_Benefits_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.9253,
+      "passed": false,
+      "failure_category": "hallucination",
+      "failure_reason": "Ungrounded claims/numbers detected: unverified numeric claim",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": true,
+        "citation_valid": true,
+        "numeric_accuracy": 0.0,
+        "fact_recall": 0.5,
+        "groundedness": 0.55,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 0.5625
+      },
+      "fact_checks": [
+        {
+          "fact": "Shore employees receive 12 days of paid sick leave per calendar year without carryover.",
+          "status": "supported",
+          "evidence": "Shore employees receive 12 days of paid sick leave per calendar year without carryover."
+        },
+        {
+          "fact": "A shore employee receives up to 13 days of paid sick leave per calendar year, considering the possibility of carry-over from previous years.",
+          "status": "supported",
+          "evidence": "A shore employee receives up to 13 days of paid sick leave per calendar year, considering the possibility of carry-over from previous years."
+        },
+        {
+          "fact": "Shore employees receive an annual professional training and certification allowance of USD 1,500 per calendar year.",
+          "status": "supported",
+          "evidence": "Shore staff receive an annual professional training and certification allowance of USD 1,500 per calendar year."
+        },
+        {
+          "fact": "Unused accrued annual leave (excluding forfeited prior-year days past March 31) is paid out on final settlement.",
+          "status": "supported",
+          "evidence": "Unused accrued annual leave (excluding forfeited prior-year days past March 31) is paid out on final settlement."
+        },
+        {
+          "fact": "Shore staff must never solicit gifts from suppliers or port agents, and unsolicited nominal gifts or hospitality exceeding USD 50 in cumulative value per vendor per calendar quarter must be declined or surrendered to Compliance.",
+          "status": "supported",
+          "evidence": "Shore staff must never solicit gifts from suppliers or port agents. Unsolicited nominal gifts or hospitality exceeding USD 50 in cumulative value per vendor per calendar quarter must be declined or surrendered to Compliance."
+        },
+        {
+          "fact": "After probation, standard written resignation notice is 30 calendar days for Job Bands A through C and 60 calendar days for Job Band D and above.",
+          "status": "supported",
+          "evidence": "After probation, standard written resignation notice is 30 calendar days for Job Bands A through C and 60 calendar days for Job Band D and above."
+        },
+        {
+          "fact": "Shore staff receive an annual sick leave of 12 days per calendar year without carryover.",
+          "status": "supported",
+          "evidence": "Shore employees receive 12 days of paid sick leave per calendar year without carryover."
+        }
+      ],
+      "latency_ms": 6156.61
+    },
+    {
+      "case_id": "eval_13",
+      "category": "edge_case",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What are the resignation notice periods for shore staff and what happens if they do not provide a written notice after probation?",
+      "expected_behavior": "answer",
+      "actual_answer": "After probation, standard written resignation notice is 30 calendar days for Job Bands A through C and 60 calendar days for Job Band D and above.",
+      "actual_refused": false,
+      "actual_citations": [
+        {
+          "source": "Code_of_Conduct_and_Benefits_Policy.pdf",
+          "excerpt": "3.4 Resignation Notice Periods After probation, standard written resignation notice is 30 calendar days for Job Bands A through C and 60 calendar days for Job Band D and above."
+        }
+      ],
+      "actual_tools_used": [],
+      "retrieved_sources": [
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "Remote_Work_and_Expense_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.9434,
+      "passed": true,
+      "failure_category": "none",
+      "failure_reason": "",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": true,
+        "citation_valid": true,
+        "numeric_accuracy": 0.5,
+        "fact_recall": 0.583,
+        "groundedness": 0.75,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 0.7165
+      },
+      "fact_checks": [
+        {
+          "fact": "After probation, standard written resignation notice is 30 calendar days for Job Bands A through C and 60 calendar days for Job Band D and above.",
+          "status": "supported",
+          "evidence": "Retrieved evidence: 'After probation, standard written resignation notice is 30 calendar days for Job Bands A through C and 60 calendar days for Job Band D and above.'"
+        },
+        {
+          "fact": "Employees may carry forward a maximum of 5 unused annual leave days into the next calendar year. Any carried-forward days not used by March 31 are forfeited without cash payout.",
+          "status": "supported",
+          "evidence": "Retrieved evidence: 'Unused accrued annual leave (excluding forfeited prior-year days past March 31 per HR_Leave_and_Attendance_Policy.pdf) is paid out on final settlement.'"
+        },
+        {
+          "fact": "CANDIDATE ANSWER gets it wrong.",
+          "status": "contradicted",
+          "evidence": "Candidate answer: 'After probation, standard written resignation notice is 30 calendar days for Job Bands A through C and 60 calendar days for Job Band D and above.'"
+        }
+      ],
+      "latency_ms": 4416.78
+    },
+    {
+      "case_id": "eval_14",
+      "category": "edge_case",
+      "sub_type": "tool_calculation",
+      "question": "How much of the annual professional training allowance (USD 1,500) must shore staff pay out if they receive full-time group medical insurance coverage?",
+      "expected_behavior": "answer",
+      "actual_answer": "Full-time shore staff do not need to pay for the annual professional training and certification allowance as it is subject to line manager pre-approval and course completion proof, with a 20% employee premium co-pay split covered by the employer.",
+      "actual_refused": false,
+      "actual_citations": [
+        {
+          "source": "Code_of_Conduct_and_Benefits_Policy.pdf",
+          "excerpt": "Full-time shore staff receive an annual professional training and certification allowance of USD 1,500 per calendar year, subject to line manager pre-approval and course completion"
+        }
+      ],
+      "actual_tools_used": [],
+      "retrieved_sources": [
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.9712,
+      "passed": false,
+      "failure_category": "hallucination",
+      "failure_reason": "Ungrounded claims/numbers detected: ['None', \"Unverified excerpt in 'Code_of_Conduct_and_Benefits_Policy.pdf': 'Full-time shore staff receive an annual professional trainin'\"]",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": true,
+        "citation_valid": false,
+        "numeric_accuracy": 0.5,
+        "fact_recall": 0.25,
+        "groundedness": 0.5,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 0.3875
+      },
+      "fact_checks": [
+        {
+          "fact": "Full-time shore staff do not need to pay for the annual professional training and certification allowance as it is subject to line manager pre-approval and course completion proof, with a 20% employee premium co-pay split covered by the employer.",
+          "status": "supported",
+          "evidence": "3.4 Resignation Notice Periods"
+        },
+        {
+          "fact": "Actual or potential conflicts of interest (e.g., family ownership in a marine supplier) must be disclosed in writing to Compliance within 10 business days.",
+          "status": "missing",
+          "evidence": ""
+        }
+      ],
+      "latency_ms": 4831.74
+    },
+    {
+      "case_id": "eval_15",
+      "category": "edge_case",
+      "sub_type": "multi_doc_synthesis",
+      "question": "What are the gift and hospitality rules for shore staff according to the Code of Conduct and Benefits Policy? What happens if a shore employee receives unsolicited nominal gifts or hospitality exceeding USD 50 in cumulative value per vendor per calendar quarter?",
+      "expected_behavior": "answer",
+      "actual_answer": "Shore staff must never solicit gifts from suppliers or port agents. Unsolicited nominal gifts or hospitality exceeding USD 50 in cumulative value per vendor per calendar quarter must be declined or surrendered to Compliance. Cash or cash-equivalent gifts (including gift cards) of any value are strictly prohibited.",
+      "actual_refused": false,
+      "actual_citations": [
+        {
+          "source": "Code_of_Conduct_and_Benefits_Policy.pdf",
+          "excerpt": "Shore staff must never solicit gifts from suppliers or port agents. Unsolicited nominal gifts or hospitality exceeding USD 50 in cumulative value per vendor per calendar quarter mu"
+        }
+      ],
+      "actual_tools_used": [],
+      "retrieved_sources": [
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "Remote_Work_and_Expense_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf"
+      ],
+      "retrieved_top_score": 1.0,
+      "passed": true,
+      "failure_category": "none",
+      "failure_reason": "",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": true,
+        "citation_valid": true,
+        "numeric_accuracy": 1.0,
+        "fact_recall": 0.9,
+        "groundedness": 1.0,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 0.965
+      },
+      "fact_checks": [
+        {
+          "fact": "Cash or cash-equivalent gifts (including gift cards) of any value are strictly prohibited.",
+          "status": "supported",
+          "evidence": "Shore staff must never solicit gifts from suppliers or port agents. Unsolicited nominal gifts or hospitality exceeding USD 50 in cumulative value per vendor per calendar quarter must be declined or surrendered to Compliance."
+        },
+        {
+          "fact": "Unsolicited nominal gifts or hospitality exceeding USD 50 in cumulative value per vendor per calendar quarter must be declined or surrendered to Compliance.",
+          "status": "supported",
+          "evidence": "Shore staff must never solicit gifts from suppliers or port agents. Unsolicited nominal gifts or hospitality exceeding USD 50 in cumulative value per vendor per calendar quarter must be declined or surrendered to Compliance."
+        },
+        {
+          "fact": "Cash or cash-equivalent gifts (including gift cards) of any value are strictly prohibited.",
+          "status": "supported",
+          "evidence": "Shore staff must never solicit gifts from suppliers or port agents. Unsolicited nominal gifts or hospitality exceeding USD 50 in cumulative value per vendor per calendar quarter must be declined or surrendered to Compliance."
+        },
+        {
+          "fact": "Actual or potential conflicts of interest (e.g., family ownership in a marine supplier) must be disclosed in writing to Compliance within 10 business days.",
+          "status": "missing",
+          "evidence": ""
+        },
+        {
+          "fact": "Retaliation against good-faith whistleblowers is grounds for immediate summary dismissal.",
+          "status": "supported",
+          "evidence": "3.2 Ethics Reporting & Anti-Retaliation"
+        }
+      ],
+      "latency_ms": 7210.02
+    },
+    {
+      "case_id": "eval_16",
+      "category": "edge_case",
+      "sub_type": "ambiguous_phrasing",
+      "question": "What is the difference between 'standard written resignation notice' and 'written resignation notice' in Oceanic Shore Operations?",
+      "expected_behavior": "answer",
+      "actual_answer": "'Standard written resignation notice' refers to a 30 calendar days requirement for Job Bands A through C, while 'written resignation notice' requires 60 calendar days for Job Band D and above.",
+      "actual_refused": false,
+      "actual_citations": [
+        {
+          "source": "Code_of_Conduct_and_Benefits_Policy.pdf",
+          "excerpt": "3.4 Resignation Notice Periods After probation, standard written resignation notice is 30 calendar days for Job Bands A through C and 60 calendar days for Job Band D and above."
+        }
+      ],
+      "actual_tools_used": [],
+      "retrieved_sources": [
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.8829,
+      "passed": true,
+      "failure_category": "none",
+      "failure_reason": "",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": true,
+        "citation_valid": true,
+        "numeric_accuracy": 1.0,
+        "fact_recall": 1.0,
+        "groundedness": 1.0,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 1.0
+      },
+      "fact_checks": [
+        {
+          "fact": "'Standard written resignation notice' refers to a 30 calendar days requirement for Job Bands A through C, while 'written resignation notice' requires 60 calendar days for Job Band D and above.",
+          "status": "supported",
+          "evidence": "Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.4 Resignation Notice Periods"
+        },
+        {
+          "fact": "'Standard written resignation notice' refers to a 30 calendar days requirement for Job Bands A through C, while 'written resignation notice' requires 60 calendar days for Job Band D and above.",
+          "status": "supported",
+          "evidence": "Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.4 Resignation Notice Periods"
+        }
+      ],
+      "latency_ms": 4624.94
+    },
+    {
+      "case_id": "eval_17",
+      "category": "edge_case",
+      "sub_type": "tool_calculation",
+      "question": "How many days of paid annual leave do full-time shore staff accrue per calendar year, including any carry-over days if they have 24 days already accrued?",
+      "expected_behavior": "answer",
+      "actual_answer": "50.6 days",
+      "actual_refused": false,
+      "actual_citations": [
+        {
+          "source": "HR_Leave_and_Attendance_Policy.pdf",
+          "excerpt": "Effective July 2026, full-time permanent shore staff accrue 20 working days of paid annual leave per calendar year."
+        }
+      ],
+      "actual_tools_used": [
+        "calculator"
+      ],
+      "retrieved_sources": [
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Code_of_Conduct_and_Benefits_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.9651,
+      "passed": false,
+      "failure_category": "retrieval_miss",
+      "failure_reason": "Required facts/sources (['Code_of_Conduct_and_Benefits_Policy.pdf', 'HR_Leave_and_Attendance_Policy.pdf']) missing from top-5 retrieved chunks (top_score=0.97).",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": true,
+        "citation_valid": true,
+        "numeric_accuracy": 0.25,
+        "fact_recall": 0.5,
+        "groundedness": 1.0,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 0.7125
+      },
+      "fact_checks": [
+        {
+          "fact": "Full-time permanent shore staff accrue 24 working days of paid annual leave per calendar year (2.0 days per completed month of service).",
+          "status": "supported",
+          "evidence": "HR_Leave_and_Attendance_Policy.pdf, Page 1, Section: 1.1 Revised Annual Paid Leave Entitlement"
+        },
+        {
+          "fact": "Employees may carry forward a maximum of 5 unused annual leave days into the next calendar year.",
+          "status": "supported",
+          "evidence": "HR_Leave_and_Attendance_Policy.pdf, Page 1, Section: 1.1 Revised Annual Paid Leave Entitlement"
+        },
+        {
+          "fact": "Any carried-forward days not used by March 31 are forfeited without cash payout.",
+          "status": "supported",
+          "evidence": "HR_Leave_and_Attendance_Policy.pdf, Page 1, Section: 1.1 Revised Annual Paid Leave Entitlement"
+        },
+        {
+          "fact": "Shore employees receive 12 days of paid sick leave per calendar year without carryover.",
+          "status": "supported",
+          "evidence": "Code_of_Conduct_and_Benefits_Policy.pdf, Page 1, Section: 3.1 Gifts, Hospitality & Conflict of Interest"
+        },
+        {
+          "fact": "Unused accrued annual leave (excluding forfeited prior-year days past March 31 per HR_Leave_and_Attendance_Policy.pdf) is paid out on final settlement.",
+          "status": "supported",
+          "evidence": "Code_of_Conduct_and_Benefits_Policy.pdf, Page 1, Section: 3.4 Resignation Notice Periods"
+        }
+      ],
+      "latency_ms": 4795.1
+    },
+    {
+      "case_id": "eval_18",
+      "category": "out_of_scope",
+      "sub_type": "near_domain_out_of_scope | groundability_gap",
+      "question": "What is the exact vesting schedule for my executive stock options?",
+      "expected_behavior": "refuse",
+      "actual_answer": "The document does not provide information about the vesting schedule for executive stock options.",
+      "actual_refused": true,
+      "actual_citations": [],
+      "actual_tools_used": [],
+      "retrieved_sources": [
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "Remote_Work_and_Expense_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.5239,
+      "passed": true,
+      "failure_category": "none",
+      "failure_reason": "",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": true,
+        "citation_valid": true,
+        "numeric_accuracy": 1.0,
+        "fact_recall": 1.0,
+        "groundedness": 1.0,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 1.0
+      },
+      "fact_checks": [],
+      "latency_ms": 2396.93
+    },
+    {
+      "case_id": "eval_19",
+      "category": "out_of_scope",
+      "sub_type": "near_domain_out_of_scope | groundability_gap",
+      "question": "What is the legal requirement for sick leave in our country?",
+      "expected_behavior": "refuse",
+      "actual_answer": "The legal requirement for sick leave varies by jurisdiction. The provided document only specifies that full-time shore staff receive 12 days of paid sick leave per calendar year without carryover, and a medical certificate from a licensed physician is mandatory for any absence exceeding 3 consecutive working days.",
+      "actual_refused": false,
+      "actual_citations": [
+        {
+          "source": "HR_Leave_and_Attendance_Policy.pdf",
+          "excerpt": "Shore employees receive 12 days of paid sick leave per calendar year without carryover. A licensed physician's medical certificate is mandatory for any sick leave absence exceeding"
+        }
+      ],
+      "actual_tools_used": [],
+      "retrieved_sources": [
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "Remote_Work_and_Expense_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.6777,
+      "passed": false,
+      "failure_category": "wrong_refusal",
+      "failure_reason": "Failed to refuse out-of-scope question.",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": false,
+        "citation_valid": true,
+        "numeric_accuracy": 0.0,
+        "fact_recall": 0.0,
+        "groundedness": 0.0,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 0.25
+      },
+      "fact_checks": [],
+      "latency_ms": 5869.38
+    },
+    {
+      "case_id": "eval_20",
+      "category": "answerable",
+      "sub_type": "single_doc",
+      "question": "According to Code_of_Conduct_and_Benefits_Policy.pdf, what are the details regarding 3.1 Gifts, Hospitality & Conflict of Interest?",
+      "expected_behavior": "answer",
+      "actual_answer": "Shore staff must never solicit gifts from suppliers or port agents. Unsolicited nominal gifts or hospitality exceeding USD 50 in cumulative value per vendor per calendar quarter must be declined or surrendered to Compliance. Cash or cash-equivalent gifts (including gift cards) of any value are strictly prohibited.",
+      "actual_refused": false,
+      "actual_citations": [
+        {
+          "source": "Code_of_Conduct_and_Benefits_Policy.pdf",
+          "excerpt": "Cash or cash-equivalent gifts (including gift cards) of any value are strictly prohibited."
+        }
+      ],
+      "actual_tools_used": [],
+      "retrieved_sources": [
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.9368,
+      "passed": false,
+      "failure_category": "prompt_defect",
+      "failure_reason": "numeric inaccuracy (0.00)",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": true,
+        "citation_valid": true,
+        "numeric_accuracy": 0.0,
+        "fact_recall": 0.5,
+        "groundedness": 1.0,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 0.675
+      },
+      "fact_checks": [
+        {
+          "fact": "Shore staff must never solicit gifts from suppliers or port agents. Unsolicited nominal gifts or hospitality exceeding USD 50 in cumulative value per vendor per calendar quarter must be declined or surrendered to Compliance.",
+          "status": "supported",
+          "evidence": "Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest"
+        },
+        {
+          "fact": "Cash or cash-equivalent gifts (including gift cards) of any value are strictly prohibited.",
+          "status": "supported",
+          "evidence": "Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest"
+        },
+        {
+          "fact": "Actual or potential conflicts of interest (e.g., family ownership in a marine supplier) must be disclosed in writing to Compliance within 10 business days.",
+          "status": "supported",
+          "evidence": "Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest"
+        },
+        {
+          "fact": "Retaliation against good-faith whistleblowers is grounds for immediate summary dismissal.",
+          "status": "supported",
+          "evidence": "Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest"
+        }
+      ],
+      "latency_ms": 5602.89
+    },
+    {
+      "case_id": "eval_21",
+      "category": "edge_case",
+      "sub_type": "ambiguous_phrasing",
+      "question": "In Code_of_Conduct_and_Benefits_Policy.pdf (3.1 Gifts, Hospitality & Conflict of Interest), what rule or value is specified for Unsolicited nominal gifts hospitality?",
+      "expected_behavior": "answer",
+      "actual_answer": "Unsolicited nominal gifts or hospitality exceeding USD 50 in cumulative value per vendor per calendar quarter must be declined or surrendered to Compliance.",
+      "actual_refused": false,
+      "actual_citations": [
+        {
+          "source": "Code_of_Conduct_and_Benefits_Policy.pdf",
+          "excerpt": "actual or potential conflicts of interest (e.g., family ownership in a marine supplier) must be disclosed in writing to Compliance within 10 business days."
+        }
+      ],
+      "actual_tools_used": [],
+      "retrieved_sources": [
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.9427,
+      "passed": true,
+      "failure_category": "none",
+      "failure_reason": "",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": true,
+        "citation_valid": true,
+        "numeric_accuracy": 1.0,
+        "fact_recall": 1.0,
+        "groundedness": 1.0,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 1.0
+      },
+      "fact_checks": [
+        {
+          "fact": "Unsolicited nominal gifts or hospitality exceeding USD 50 in cumulative value per vendor per calendar quarter must be declined or surrendered to Compliance.",
+          "status": "supported",
+          "evidence": "Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest"
+        },
+        {
+          "fact": "Cash or cash-equivalent gifts (including gift cards) of any value are strictly prohibited.",
+          "status": "supported",
+          "evidence": "Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest"
+        },
+        {
+          "fact": "Actual or potential conflicts of interest (e.g., family ownership in a marine supplier) must be disclosed in writing to Compliance within 10 business days.",
+          "status": "supported",
+          "evidence": "Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest"
+        },
+        {
+          "fact": "Retaliation against good-faith whistleblowers is grounds for immediate summary dismissal.",
+          "status": "supported",
+          "evidence": "Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest"
+        }
+      ],
+      "latency_ms": 5960.81
+    },
+    {
+      "case_id": "eval_22",
+      "category": "edge_case",
+      "sub_type": "ambiguous_phrasing",
+      "question": "In Code_of_Conduct_and_Benefits_Policy.pdf (3.1 Gifts, Hospitality & Conflict of Interest), what rule or value is specified for Cash cash-equivalent gifts including?",
+      "expected_behavior": "answer",
+      "actual_answer": "Cash or cash-equivalent gifts (including gift cards) of any value are strictly prohibited.",
+      "actual_refused": false,
+      "actual_citations": [
+        {
+          "source": "Code_of_Conduct_and_Benefits_Policy.pdf",
+          "excerpt": "Cash or cash-equivalent gifts (including gift cards) of any value are strictly prohibited."
+        }
+      ],
+      "actual_tools_used": [],
+      "retrieved_sources": [
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.9427,
+      "passed": true,
+      "failure_category": "none",
+      "failure_reason": "",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": true,
+        "citation_valid": true,
+        "numeric_accuracy": 1.0,
+        "fact_recall": 0.929,
+        "groundedness": 1.0,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 0.9752
+      },
+      "fact_checks": [
+        {
+          "fact": "Cash or cash-equivalent gifts (including gift cards) of any value are strictly prohibited.",
+          "status": "supported",
+          "evidence": "Retrieved Evidence: Cash or cash-equivalent gifts (including gift cards) of any value are strictly prohibited."
+        },
+        {
+          "fact": "Actual or potential conflicts of interest (e.g., family ownership in a marine supplier) must be disclosed in writing to Compliance within 10 business days.",
+          "status": "supported",
+          "evidence": "Retrieved Evidence: Actual or potential conflicts of interest (e.g., family ownership in a marine supplier) must be disclosed in writing to Compliance within 10 business days."
+        },
+        {
+          "fact": "After probation, standard written resignation notice is 30 calendar days for Job Bands A through C and 60 calendar days for Job Band D and above.",
+          "status": "supported",
+          "evidence": "Retrieved Evidence: After probation, standard written resignation notice is 30 calendar days for Job Bands A through C and 60 calendar days for Job Band D and above."
+        },
+        {
+          "fact": "Unused accrued annual leave (excluding forfeited prior-year days past March 31 per HR_Leave_and_Attendance_Policy.pdf) is paid out on final settlement.",
+          "status": "supported",
+          "evidence": "Retrieved Evidence: Unused accrued annual leave (excluding forfeited prior-year days past March 31 per HR_Leave_and_Attendance_Policy.pdf) is paid out on final settlement."
+        },
+        {
+          "fact": "Company group medical insurance covers shore staff and eligible dependents with an 80% employer / 20% employee premium co-pay split.",
+          "status": "supported",
+          "evidence": "Retrieved Evidence: Company group medical insurance covers shore staff and eligible dependents with an 80% employer / 20% employee premium co-pay split."
+        },
+        {
+          "fact": "Full-time shore staff receive an annual professional training and certification allowance of USD 1,500 per calendar year, subject to line manager pre-approval and course completion proof.",
+          "status": "supported",
+          "evidence": "Retrieved Evidence: Full-time shore staff receive an annual professional training and certification allowance of USD 1,500 per calendar year, subject to line manager pre-approval and course completion proof."
+        },
+        {
+          "fact": "Cash or cash-equivalent gifts (including gift cards) of any value are strictly prohibited.",
+          "status": "contradicted",
+          "evidence": "Retrieved Evidence: Cash or cash-equivalent gifts (including gift cards) of any value are strictly prohibited. This is the same as the expected key fact, but it's not a contradiction."
+        }
+      ],
+      "latency_ms": 3328.27
+    },
+    {
+      "case_id": "eval_23",
+      "category": "edge_case",
+      "sub_type": "ambiguous_phrasing",
+      "question": "In Code_of_Conduct_and_Benefits_Policy.pdf (3.1 Gifts, Hospitality & Conflict of Interest), what rule or value is specified for Actual potential conflicts interest?",
+      "expected_behavior": "answer",
+      "actual_answer": "Actual or potential conflicts of interest (e.g., family ownership in a marine supplier) must be disclosed in writing to Compliance within 10 business days.",
+      "actual_refused": false,
+      "actual_citations": [
+        {
+          "source": "Code_of_Conduct_and_Benefits_Policy.pdf",
+          "excerpt": "Actual or potential conflicts of interest (e.g., family ownership in a marine supplier) must be disclosed in writing to Compliance within 10 business days."
+        }
+      ],
+      "actual_tools_used": [],
+      "retrieved_sources": [
+        "Code_of_Conduct_and_Benefits_Policy.pdf",
+        "HR_Leave_and_Attendance_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.9427,
+      "passed": true,
+      "failure_category": "none",
+      "failure_reason": "",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": true,
+        "citation_valid": true,
+        "numeric_accuracy": 1.0,
+        "fact_recall": 1.0,
+        "groundedness": 1.0,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 1.0
+      },
+      "fact_checks": [
+        {
+          "fact": "Actual or potential conflicts of interest (e.g., family ownership in a marine supplier) must be disclosed in writing to Compliance within 10 business days.",
+          "status": "supported",
+          "evidence": "[Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest]"
+        },
+        {
+          "fact": "Actual or potential conflicts of interest (e.g., family ownership in a marine supplier) must be disclosed in writing to Compliance within 10 business days.",
+          "status": "supported",
+          "evidence": "[Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest]"
+        },
+        {
+          "fact": "Actual or potential conflicts of interest (e.g., family ownership in a marine supplier) must be disclosed in writing to Compliance within 10 business days.",
+          "status": "supported",
+          "evidence": "[Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest]"
+        },
+        {
+          "fact": "Actual or potential conflicts of interest (e.g., family ownership in a marine supplier) must be disclosed",
+          "status": "supported",
+          "evidence": "[Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest]"
+        }
+      ],
+      "latency_ms": 3857.8
+    },
+    {
+      "case_id": "eval_24",
+      "category": "answerable",
+      "sub_type": "single_doc",
+      "question": "According to HR_Leave_and_Attendance_Policy.pdf, what are the details regarding (Hr-Pol-01)?",
+      "expected_behavior": "answer",
+      "actual_answer": "HR-POL-01 refers to the Revised Annual Paid Leave Entitlement section in the HR_Leave_and_Attendance_Policy.pdf document.",
+      "actual_refused": false,
+      "actual_citations": [
+        {
+          "source": "HR_Leave_and_Attendance_Policy.pdf",
+          "excerpt": "Effective July 2026, full-time permanent shore staff accrue 20 working days of paid annual leave per calendar year."
+        }
+      ],
+      "actual_tools_used": [],
+      "retrieved_sources": [
+        "HR_Leave_and_Attendance_Policy.pdf",
+        "Code_of_Conduct_and_Benefits_Policy.pdf"
+      ],
+      "retrieved_top_score": 0.844,
+      "passed": false,
+      "failure_category": "retrieval_miss",
+      "failure_reason": "Required facts/sources (['HR_Leave_and_Attendance_Policy.pdf']) missing from top-5 retrieved chunks (top_score=0.84).",
+      "metrics": {
+        "contract_valid": true,
+        "refusal_correct": true,
+        "citation_valid": true,
+        "numeric_accuracy": 0.333,
+        "fact_recall": 0.25,
+        "groundedness": 1.0,
+        "verbosity_penalty": 0.0,
+        "tool_appropriateness": 1.0,
+        "composite_score": 0.6374
+      },
+      "fact_checks": [
+        {
+          "fact": "HR-POL-01 refers to the Revised Annual Paid Leave Entitlement section in the HR_Leave_and_Attendance_Policy.pdf document.",
+          "status": "supported",
+          "evidence": "Source: HR_Leave_and_Attendance_Policy.pdf | Page 1 | Section: 1.1 Revised Annual Paid Leave Entitlement"
+        },
+        {
+          "fact": "Shore employees receive 12 days of paid sick leave per calendar year without carryover.",
+          "status": "supported",
+          "evidence": "Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest"
+        },
+        {
+          "fact": "Unused accrued annual leave (excluding forfeited prior-year days past March 31 per HR_Leave_and_Attendance_Policy.pdf) is paid out on final settlement.",
+          "status": "contradicted",
+          "evidence": "Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest"
+        },
+        {
+          "fact": "Cash or cash-equivalent gifts (including gift cards) of any value are strictly prohibited.",
+          "status": "contradicted",
+          "evidence": "Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest"
+        },
+        {
+          "fact": "Actual or potential conflicts of interest (e.g., family ownership in a marine supplier) must be disclosed in writing to Compliance within 10 business days.",
+          "status": "contradicted",
+          "evidence": "Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest"
+        },
+        {
+          "fact": "Retaliation against good-faith whistleblowers is grounds for immediate summary dismissal.",
+          "status": "supported",
+          "evidence": "Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.2 Ethics Reporting & Anti-Retaliation"
+        }
+      ],
+      "latency_ms": 4397.23
+    }
+  ]
+}

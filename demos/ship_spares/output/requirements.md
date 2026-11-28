@@ -2,46 +2,56 @@
 
 **Brief:** Build a ship-spares procurement assistant for marine fleet superintendents that looks up spare parts from our catalogue CSV, checks supplier discount tiers, compliance certificates, and port freight lead times, and calculates total order landed costs and estimated arrival dates, while refusing unapproved emergency credit overrides or legal/weather forecasts outside the docs.
 **Audience:** marine fleet superintendents
-**Tone:** formal
+**Tone:** formal, policy-accurate
 **Human Checkpoint:** `auto_approved`
 
 ## Scope
-Build a ship-spares procurement assistant for marine fleet superintendents that looks up spare parts from our catalogue CSV, checks supplier discount tiers and compliance certificates, calculates total order landed costs, estimated arrival dates, refuses unapproved emergency credit overrides or legal/weather forecasts outside the provided documents.
+Build a ship-spares procurement assistant for marine fleet superintendents that looks up spare parts from our catalogue CSV, checks supplier discount tiers and compliance certificates, calculates total order landed costs based on unit prices and quantities, refuses unapproved emergency credit overrides or legal/weather forecasts outside the provided documents, and estimates arrival dates based on port freight lead times.
 
 ## Must-Answer Topics
-- supplier_discount_tiers
-- compliance_certificates
-- total_order_landed_costs
-- estimated_arrival_dates
+- Supplier Discount Tiers
+- Compliance Certificates
+- Total Order Landed Costs Calculation
+- Emergency Credit Overrides Refusal
+- Legal/Weather Forecasts Outside Provided Documents
+- Port Freight Lead Times
 
 ## Must-Refuse Topics
-- emergency_credit_overrides
-- legal_weather_forecasts_outside_docs
+- External Legal or Weather Forecast Sources
+- Unapproved Emergency Credit Overrides
+- Legal/Weather Forecasts Outside Provided Documents
+- unapproved emergency credit overrides
+- legal/weather forecasts outside the docs
 - Questions outside the provided document corpus
 
 ## Tool Selection
-- **Recommended:** `['csv_lookup', 'calculator']`
-- **Rejected `open_meteo_weather`:** Excluded by requirements architect as unnecessary for the brief.
-- **Rejected `current_date`:** Excluded by requirements architect as unnecessary for the brief.
+- **Recommended:** `['csv_lookup', 'calculator', 'unit_converter', 'current_date']`
+- **Rejected `json_record_lookup`:** Excluded deterministically: no JSON/JSONL/YAML files exist in the document corpus.
+- **Rejected `statistics_calculator`:** Excluded deterministically: user brief does not request statistical/variance/KPI calculations.
+- **Rejected `currency_converter`:** Excluded deterministically: user brief does not request currency conversion or FX rates.
+- **Rejected `open_meteo_weather`:** Excluded deterministically: user brief does not request weather or meteorological data.
+- **Rejected `http_public_country_info`:** Excluded deterministically: user brief does not request country metadata, ISO codes, or calling codes.
+- **Rejected `text_stats_and_regex`:** Excluded deterministically: no regex/frequency text audit intent or log corpus detected.
 
 ## Clarifying Q&A
-1. **Q:** What is the scope of the audience for this ship-spares procurement assistant? Are we targeting only marine fleet superintendents or also other stakeholders like engineers, maintenance teams, etc.?
-   **A (auto_inferred):** The audience for this ship-spares procurement assistant is primarily marine fleet superintendents.
-2. **Q:** What are the refusal boundaries for emergency credit overrides? Are there specific conditions or criteria under which these overrides should be refused?
-   **A (auto_inferred):** Emergency credit overrides should not be accepted if they do not comply with the legal, financial, or operational policies of the organization.
-3. **Q:** What are the specific conditions under which compliance certificates should be refused? Are there any exceptions for emergency situations?
-   **A (auto_inferred):** Compliance certificates should not be accepted if they do not meet the required standards or specifications as outlined in Marine Technical Compliance & Specs (PROC-DOC-02). Exceptions may apply for urgent, unforeseen circumstances.
-4. **Q:** What is the expected behavior of the tool when a legal or weather forecast outside the provided documents is encountered? Should these be strictly refused or handled differently?
-   **A (auto_inferred):** The tool should refuse any emergency credit overrides, compliance certificates, or port freight lead times that are not within the scope of the provided documents and do not comply with organizational policies.
-5. **Q:** What is the expected behavior when a supplier's discount tier exceeds the legal or financial limits set in Supplier SLA & Pricing Terms (PROC-DOC-01)? Should these discounts be refused, and if so, what should happen?
-   **A (auto_inferred):** Supplier discounts exceeding the legal or financial limits set in Supplier SLA & Pricing Terms (PROC-DOC-01) should be refused. The tool should notify the user of the violation and suggest alternative suppliers.
+1. **Q:** What is the scope of audience for this ship-spares procurement assistant? Are we limited to marine fleet superintendents or should it also include other stakeholders?
+   **A (auto_inferred):** The audience for this ship-spares procurement assistant is limited to marine fleet superintendents.
+2. **Q:** What specific emergency credit overrides should the system refuse? Are there certain types of emergencies or situations where we can allow exceptions?
+   **A (auto_inferred):** The system should refuse all unapproved emergency credit overrides.
+3. **Q:** Should the system strictly refuse any legal or weather forecasts that are outside of the provided documents? Or is there a need to consider external sources as well?
+   **A (auto_inferred):** The system should strictly refuse any legal or weather forecasts that are outside of the provided documents.
+4. **Q:** What is the expected behavior for port freight lead times if they fall outside the documented schedule in Port_Freight_and_Customs_Schedule.pdf? Should we assume a default value or refuse such orders?
+   **A (auto_inferred):** The system should refuse any port freight lead times that are outside of the documented schedule.
+5. **Q:** Should the system calculate total order landed costs based on unit prices and quantities from spares_catalogue.csv, or should we also consider any additional fees or taxes that might apply?
+   **A (auto_inferred):** The system should calculate total order landed costs based solely on unit prices and quantities from spares_catalogue.csv.
 
 ## Groundability Audit
 - **Status:** `partially_grounded` (ratio=0.875)
-- **Build a ship-spares procurement assistant for marine fleet superintendents that looks up spare parts from our catalogue CSV, checks supplier** -> `supported` (score=0.96, sources=['Marine_Technical_Compliance_and_Specs.pdf', 'Supplier_SLA_and_Pricing_Terms.pdf', 'spares_catalogue.csv']): The evidence includes the spares catalogue, supplier SLA and pricing terms, and port freight lead times which support various aspects of building a ship-spares procurement assistant.
-- **port freight lead times** -> `supported` (score=1.00, sources=['Port_Freight_and_Customs_Schedule.pdf', 'Supplier_SLA_and_Pricing_Terms.pdf']): The evidence provides detailed information on port freight rates and customs handling fees, which supports the topic of port freight lead times.
-- **calculates total order landed costs** -> `supported` (score=0.71, sources=['Port_Freight_and_Customs_Schedule.pdf', 'Supplier_SLA_and_Pricing_Terms.pdf']): The evidence includes information on port freight rates, customs handling fees, and supplier SLA & discount terms which support the calculation of total order landed costs.
-- **estimated arrival dates, while refusing unapproved emergency credit overrides or legal/weather forecasts outside the docs** -> `partial` (score=0.66, sources=['Supplier_SLA_and_Pricing_Terms.pdf', 'Port_Freight_and_Customs_Schedule.pdf']): The evidence provides information on emergency AOG priority dispatch surcharges but does not include details on estimated arrival dates.
+- **Build a ship-spares procurement assistant for marine fleet superintendents that looks up spare parts from our catalogue CSV, checks supplier** -> `supported` (score=0.96, sources=['Marine_Technical_Compliance_and_Specs.pdf', 'Supplier_SLA_and_Pricing_Terms.pdf', 'spares_catalogue.csv']): The provided documents cover the technical compliance, supplier SLA and pricing terms, port freight lead times, and spare parts catalogue, which are all necessary for building a ship-spares procurement assistant.
+- **port freight lead times** -> `supported` (score=1.00, sources=['Port_Freight_and_Customs_Schedule.pdf', 'Supplier_SLA_and_Pricing_Terms.pdf']): The provided document contains specific details about port freight rates and customs handling fees, which are relevant to calculating port freight lead times.
+- **calculates total order landed costs** -> `supported` (score=0.71, sources=['Port_Freight_and_Customs_Schedule.pdf', 'Supplier_SLA_and_Pricing_Terms.pdf']): The provided documents contain information about port freight rates, customs handling fees, and supplier SLA and pricing terms, which are essential for calculating total order landed costs.
+- **estimated arrival dates** -> `partial` (score=0.31, sources=['Port_Freight_and_Customs_Schedule.pdf', 'spares_catalogue.csv']): The provided document contains details about port freight rates and customs handling fees, which can be used to estimate the arrival date of orders.
 
 ### Warnings
-- ⚠️ PARTIAL COVERAGE: 'estimated arrival dates, while refusing unapproved emergency credit overrides or legal/weather forecasts outside the docs' is only partially documented (Supplier_SLA_and_Pricing_Terms.pdf, Port_Freight_and_Customs_Schedule.pdf).
+- ⚠️ No explicit gaps were found in the corpus for any requested topic. All topics are supported by at least one relevant source.
+- ⚠️ PARTIAL COVERAGE: 'estimated arrival dates' is only partially documented (Port_Freight_and_Customs_Schedule.pdf, spares_catalogue.csv).

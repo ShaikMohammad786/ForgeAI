@@ -1,0 +1,147 @@
+{
+  "old_docs_count": 3,
+  "new_docs_count": 3,
+  "added_files": [],
+  "modified_files": [
+    "HR_Leave_and_Attendance_Policy.pdf",
+    "Remote_Work_and_Expense_Policy.pdf"
+  ],
+  "removed_files": [],
+  "old_pass_rate": 0.6667,
+  "new_pass_rate": 0.3333,
+  "newly_broken": [
+    {
+      "case_id": "eval_01",
+      "question": "What is the maximum number of unused annual leave days that shore staff can carry forward into the next calendar year?",
+      "failure_category": "prompt_defect",
+      "failure_reason": "missed expected facts despite retrieval (recall=0.25); numeric inaccuracy (0.00)"
+    },
+    {
+      "case_id": "eval_02",
+      "question": "What is the total amount of paid sick leave that full-time permanent shore staff receive per calendar year?",
+      "failure_category": "prompt_defect",
+      "failure_reason": "numeric inaccuracy (0.33)"
+    },
+    {
+      "case_id": "eval_05",
+      "question": "What is the maximum number of unused annual leave days that can be carried forward into the next calendar year for new hires during their probation period?",
+      "failure_category": "retrieval_miss",
+      "failure_reason": "Required facts/sources (['Code_of_Conduct_and_Benefits_Policy.pdf', 'HR_Leave_and_Attendance_Policy.pdf', 'Remote_Work_and_Expense_Policy.pdf']) missing from top-5 retrieved chunks (top_score=0.83)."
+    },
+    {
+      "case_id": "eval_06",
+      "question": "How many days of fully paid parental leave are available to primary caregivers after 6 months of continuous shore employment?",
+      "failure_category": "wrong_refusal",
+      "failure_reason": "False refusal on answerable question."
+    },
+    {
+      "case_id": "eval_07",
+      "question": "What is the standard shore office hours, including mandatory core collaboration hours?",
+      "failure_category": "wrong_refusal",
+      "failure_reason": "False refusal on answerable question."
+    },
+    {
+      "case_id": "eval_08",
+      "question": "How many days of paid leave do secondary caregivers receive for parental leave?",
+      "failure_category": "wrong_refusal",
+      "failure_reason": "False refusal on answerable question."
+    },
+    {
+      "case_id": "eval_11",
+      "question": "What is the reimbursement rate for personal vehicle business mileage?",
+      "failure_category": "wrong_refusal",
+      "failure_reason": "False refusal on answerable question."
+    },
+    {
+      "case_id": "eval_12",
+      "question": "How many days of paid sick leave does a shore employee receive per calendar year, including any carry-over days if they have 12 days already used?",
+      "failure_category": "hallucination",
+      "failure_reason": "Ungrounded claims/numbers detected: unverified numeric claim"
+    }
+  ],
+  "newly_fixed": [],
+  "still_failing": [
+    {
+      "case_id": "eval_03",
+      "question": "What is the probation notice period for Job Band D and above shore employees?",
+      "failure_category": "prompt_defect",
+      "failure_reason": "missing/invalid citation; missed expected facts despite retrieval (recall=0.40); numeric inaccuracy (0.25)"
+    },
+    {
+      "case_id": "eval_04",
+      "question": "What is the total amount of paid sick leave that new hires can receive during their probation period?",
+      "failure_category": "wrong_refusal",
+      "failure_reason": "False refusal on answerable question."
+    },
+    {
+      "case_id": "eval_09",
+      "question": "What is the maximum amount for home-office ergonomic equipment stipend per 24 months?",
+      "failure_category": "hallucination",
+      "failure_reason": "Ungrounded claims/numbers detected: unverified numeric claim"
+    },
+    {
+      "case_id": "eval_14",
+      "question": "How much of the annual professional training allowance (USD 1,500) must shore staff pay out if they receive full-time group medical insurance coverage?",
+      "failure_category": "hallucination",
+      "failure_reason": "Ungrounded claims/numbers detected: ['None', \"Unverified excerpt in 'Code_of_Conduct_and_Benefits_Policy.pdf': 'Full-time shore staff receive an annual professional trainin'\"]"
+    },
+    {
+      "case_id": "eval_17",
+      "question": "How many days of paid annual leave do full-time shore staff accrue per calendar year, including any carry-over days if they have 24 days already accrued?",
+      "failure_category": "retrieval_miss",
+      "failure_reason": "Required facts/sources (['Code_of_Conduct_and_Benefits_Policy.pdf', 'HR_Leave_and_Attendance_Policy.pdf']) missing from top-5 retrieved chunks (top_score=0.97)."
+    },
+    {
+      "case_id": "eval_19",
+      "question": "What is the legal requirement for sick leave in our country?",
+      "failure_category": "wrong_refusal",
+      "failure_reason": "Failed to refuse out-of-scope question."
+    },
+    {
+      "case_id": "eval_20",
+      "question": "According to Code_of_Conduct_and_Benefits_Policy.pdf, what are the details regarding 3.1 Gifts, Hospitality & Conflict of Interest?",
+      "failure_category": "prompt_defect",
+      "failure_reason": "numeric inaccuracy (0.00)"
+    },
+    {
+      "case_id": "eval_24",
+      "question": "According to HR_Leave_and_Attendance_Policy.pdf, what are the details regarding (Hr-Pol-01)?",
+      "failure_category": "retrieval_miss",
+      "failure_reason": "Required facts/sources (['HR_Leave_and_Attendance_Policy.pdf']) missing from top-5 retrieved chunks (top_score=0.84)."
+    }
+  ],
+  "now_ungroundable": [
+    {
+      "case_id": "eval_06",
+      "question": "How many days of fully paid parental leave are available to primary caregivers after 6 months of continuous shore employment?",
+      "old_sources": [
+        "HR_Leave_and_Attendance_Policy.pdf"
+      ],
+      "reason": "Key facts no longer exist in updated corpus."
+    },
+    {
+      "case_id": "eval_07",
+      "question": "What is the standard shore office hours, including mandatory core collaboration hours?",
+      "old_sources": [
+        "HR_Leave_and_Attendance_Policy.pdf"
+      ],
+      "reason": "Key facts no longer exist in updated corpus."
+    },
+    {
+      "case_id": "eval_09",
+      "question": "What is the maximum amount for home-office ergonomic equipment stipend per 24 months?",
+      "old_sources": [
+        "Remote_Work_and_Expense_Policy.pdf"
+      ],
+      "reason": "Key facts no longer exist in updated corpus."
+    },
+    {
+      "case_id": "eval_11",
+      "question": "What is the reimbursement rate for personal vehicle business mileage?",
+      "old_sources": [
+        "Remote_Work_and_Expense_Policy.pdf"
+      ],
+      "reason": "Key facts no longer exist in updated corpus."
+    }
+  ]
+}

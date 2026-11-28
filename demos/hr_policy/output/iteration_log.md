@@ -1,11 +1,11 @@
 # Optimization Iteration Log
 
-## Iteration 1 (wrong_refusal) — ACCEPTED
-- **Diagnosis:** Failed to refuse out-of-scope questions related to medical advice, legal advice, and undocumented executive stock option vesting rules.
-- **Failure IDs Targeted:** `['eval_21', 'eval_22', 'eval_23', 'eval_24', 'eval_25']`
-- **Score:** `0.732` -> `0.745`
-- **Pass Rate:** `70.4%` -> `74.1%`
-- **Decision:** Accepted patch (+3.7pp pass rate, +0.013 composite score).
+## Iteration 1 (prompt_defect) — ROLLED BACK
+- **Diagnosis:** Dominant failure is numeric inaccuracy due to low min_score_threshold, and prompt defects related to retrieval misses.
+- **Failure IDs Targeted:** `['eval_03', 'eval_20', 'eval_24']`
+- **Score:** `0.854` -> `0.803`
+- **Pass Rate:** `79.2%` -> `66.7%`
+- **Decision:** Rolled back patch (pass_delta=-0.125, score_delta=-0.051 did not improve over best).
 - **Targeted Diff:**
-  - `retrieval.min_score_threshold`: `0.08` -> `0.12` (Raise score gate to enforce refusal on out-of-scope queries)
-  - `system_prompt`: `(len=755)` -> `+ STRICT REFUSAL RULE: When asked about unsupported or missing policies, ALWAYS set refused=true and start answer with "I ` (Clarify answer-vs-refuse boundary)
+  - `system_prompt`: `(len=721)` -> `+ FORMAT & COMPLETENESS RULE: Include all key facts, exact numbers, and at least one valid filename in citations; return s` (Repair prompt compliance and fact/citation completeness)
+  - `retrieval.top_k`: `5` -> `6` (Provide +1 chunk for multi-document synthesis)

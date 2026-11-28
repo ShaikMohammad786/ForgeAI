@@ -85,3 +85,36 @@ Every factory run writes a self-contained runnable bundle:
 - `scorecard.json` & `scorecard.md`: Metric breakdown across iterations and question categories.
 - `report.md`: Executive summary, honest failure audit ("what still fails and why"), budget usage.
 - `corpus_manifest.json`: SHA-256 document hashes enabling `forgeai regress` change detection.
+
+---
+
+## Hybrid Tool Architecture & Extended Capabilities
+
+### 17 Document Formats Supported (`ingestion/loader.py` & `chunker.py`)
+- **Documents & Reports:** `.pdf` (`pypdf`), `.docx` (`python-docx` paragraphs + tables), `.md`, `.markdown`, `.txt`, `.rst`, `.log`
+- **Tabular Spreadsheets:** `.csv`, `.tsv`, `.xlsx` (`openpyxl` multi-sheet extraction)
+- **Structured & Markup:** `.json`, `.jsonl`, `.yaml`, `.yml`, `.html`, `.htm`, `.xml`
+
+### Option 3 Hybrid Tool Architecture (10 Standard Tools + AST Custom Macros)
+1. **10 Curated Sandboxed Standard Tools (`tools/registry.py`)**:
+   - Data & Corpus: `csv_lookup` (CSV/TSV/XLSX), `json_record_lookup` (JSON/JSONL/YAML), `text_stats_and_regex` (corpus-scoped stats & capped regex scan)
+   - Computation & Conversion: `calculator` (AST math), `statistics_calculator` (mean/median/stdev/weighted_avg/pct change), `unit_converter`, `current_date`
+   - Keyless Public APIs: `currency_converter` (Frankfurter ECB FX), `open_meteo_weather` (Open-Meteo forecasts), `http_public_country_info` (RestCountries ISO/currency/calling codes)
+   - Every tool enforces deterministic corpus-capability & brief-intent gating (with explicit refusal-clause stripping so `"while refusing weather"` never attaches `open_meteo_weather`) and runtime `ToolAuthorizationError` enforcement.
+2. **Declarative AST-Verified Custom Macro Tools (`CustomToolSpec`)**:
+   - Synthesized per brief & corpus (`prompts/custom_tool_synthesis.j2`) into `agent_definition.yaml` as pure data structures (`formula` or `tabular_filter`).
+   - Compiled and verified exclusively through Python `ast` allowlists (`tools/custom_macro.py`, zero `eval()` / `exec()`), rejecting arbitrary calls or undeclared identifiers.
+
+### Optional FastAPI REST API (`forgeai serve`) & Zero-Server Streamlit UI (`forgeai ui`)
+- **Streamlit UI (`src/forgeai/ui/app.py`)** directly imports `forgeai` modules with **no separate backend server needed** (deployable straight to Streamlit Community Cloud or Hugging Face Spaces), providing `Ollama`, `Gemini API`, and `Hybrid` execution modes.
+- **FastAPI Backend (`src/forgeai/api/server.py`)** optionally exposes `/health`, `/models`, `/agents`, `/build`, `/chat`, and `/regress` for programmatic microservice integration.
+
+### Latest Verified End-to-End Benchmarks (`qwen2.5:3b` + `qwen2.5:1.5b` CUDA)
+| Benchmark / Check | Result | Tools & Macros Attached | Key Notes |
+| :--- | :--- | :--- | :--- |
+| **Demo 1: Shore HR Policy** | **79.2% (19/24)**, composite `0.854` | `calculator`, `current_date` | Matches Human Baseline `79.2%`; beats Human on `eval_04`, loses on `eval_19` |
+| **Demo 2: Ship Spares** | `58.3%` -> **70.8% (17/24)**, composite `0.810` | `csv_lookup`, `calculator`, `unit_converter`, `current_date` + 2 Custom Macros | Iter 1 accepted (+12.5pp); macros `lookup_critical_spares` & `calculate_total_landed_cost` |
+| **Regression Mode (HR v2)** | `66.7%` -> `33.3%` | Re-evaluated against modified HR docs | Detected 2 modified PDFs, 8 newly broken, 4 now ungroundable cases |
+| **Unseen Trap A (0% Grounded)** | **Halted safely** | None synthesized | Refused spacecraft/lunar brief rather than hallucinating |
+| **Unseen Trap B (Port Dispatch)** | **75.0%** (`PortDispatchAssistant`) | `json_record_lookup`, `unit_converter`, `open_meteo_weather` | Flagged unsupported 10-year climate forecast into `must_refuse` |
+

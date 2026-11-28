@@ -6,68 +6,82 @@ brief: Build a ship-spares procurement assistant for marine fleet superintendent
 domain_name: Ship-Spares Procurement Assistant
 scope: Build a ship-spares procurement assistant for marine fleet superintendents
   that looks up spare parts from our catalogue CSV, checks supplier discount tiers
-  and compliance certificates, calculates total order landed costs, estimated arrival
-  dates, refuses unapproved emergency credit overrides or legal/weather forecasts
-  outside the provided documents.
+  and compliance certificates, calculates total order landed costs based on unit prices
+  and quantities, refuses unapproved emergency credit overrides or legal/weather forecasts
+  outside the provided documents, and estimates arrival dates based on port freight
+  lead times.
 audience: marine fleet superintendents
-tone: formal
+tone: formal, policy-accurate
 must_answer_topics:
-- supplier_discount_tiers
-- compliance_certificates
-- total_order_landed_costs
-- estimated_arrival_dates
+- Supplier Discount Tiers
+- Compliance Certificates
+- Total Order Landed Costs Calculation
+- Emergency Credit Overrides Refusal
+- Legal/Weather Forecasts Outside Provided Documents
+- Port Freight Lead Times
 must_refuse_topics:
-- emergency_credit_overrides
-- legal_weather_forecasts_outside_docs
+- External Legal or Weather Forecast Sources
+- Unapproved Emergency Credit Overrides
+- Legal/Weather Forecasts Outside Provided Documents
+- unapproved emergency credit overrides
+- legal/weather forecasts outside the docs
 - Questions outside the provided document corpus
 recommended_tools:
 - csv_lookup
 - calculator
+- unit_converter
+- current_date
 rejected_tools:
-  open_meteo_weather: Excluded by requirements architect as unnecessary for the brief.
-  current_date: Excluded by requirements architect as unnecessary for the brief.
+  json_record_lookup: 'Excluded deterministically: no JSON/JSONL/YAML files exist
+    in the document corpus.'
+  statistics_calculator: 'Excluded deterministically: user brief does not request
+    statistical/variance/KPI calculations.'
+  currency_converter: 'Excluded deterministically: user brief does not request currency
+    conversion or FX rates.'
+  open_meteo_weather: 'Excluded deterministically: user brief does not request weather
+    or meteorological data.'
+  http_public_country_info: 'Excluded deterministically: user brief does not request
+    country metadata, ISO codes, or calling codes.'
+  text_stats_and_regex: 'Excluded deterministically: no regex/frequency text audit
+    intent or log corpus detected.'
 clarifying_qa:
-- question: What is the scope of the audience for this ship-spares procurement assistant?
-    Are we targeting only marine fleet superintendents or also other stakeholders
-    like engineers, maintenance teams, etc.?
-  answer: The audience for this ship-spares procurement assistant is primarily marine
+- question: What is the scope of audience for this ship-spares procurement assistant?
+    Are we limited to marine fleet superintendents or should it also include other
+    stakeholders?
+  answer: The audience for this ship-spares procurement assistant is limited to marine
     fleet superintendents.
   answered_by: auto_inferred
-  rationale: Determining the scope of the audience will help in tailoring the tool's
-    features and user interface appropriately.
-- question: What are the refusal boundaries for emergency credit overrides? Are there
-    specific conditions or criteria under which these overrides should be refused?
-  answer: Emergency credit overrides should not be accepted if they do not comply
-    with the legal, financial, or operational policies of the organization.
+  rationale: Clarify if there are any additional audiences that need to be considered.
+- question: What specific emergency credit overrides should the system refuse? Are
+    there certain types of emergencies or situations where we can allow exceptions?
+  answer: The system should refuse all unapproved emergency credit overrides.
   answered_by: auto_inferred
-  rationale: Understanding the refusal boundaries will ensure that the tool adheres
-    to organizational policies and regulations.
-- question: What are the specific conditions under which compliance certificates should
-    be refused? Are there any exceptions for emergency situations?
-  answer: Compliance certificates should not be accepted if they do not meet the required
-    standards or specifications as outlined in Marine Technical Compliance & Specs
-    (PROC-DOC-02). Exceptions may apply for urgent, unforeseen circumstances.
+  rationale: Determine the boundaries for emergency credit overrides to ensure compliance
+    and consistency.
+- question: Should the system strictly refuse any legal or weather forecasts that
+    are outside of the provided documents? Or is there a need to consider external
+    sources as well?
+  answer: The system should strictly refuse any legal or weather forecasts that are
+    outside of the provided documents.
   answered_by: auto_inferred
-  rationale: Clarifying refusal boundaries for compliance certificates will ensure
-    that only valid and compliant documents are processed.
-- question: What is the expected behavior of the tool when a legal or weather forecast
-    outside the provided documents is encountered? Should these be strictly refused
-    or handled differently?
-  answer: The tool should refuse any emergency credit overrides, compliance certificates,
-    or port freight lead times that are not within the scope of the provided documents
-    and do not comply with organizational policies.
+  rationale: Ensure all inputs and calculations are based on the available data and
+    do not include external, unverified information.
+- question: What is the expected behavior for port freight lead times if they fall
+    outside the documented schedule in Port_Freight_and_Customs_Schedule.pdf? Should
+    we assume a default value or refuse such orders?
+  answer: The system should refuse any port freight lead times that are outside of
+    the documented schedule.
   answered_by: auto_inferred
-  rationale: This question ensures that the tool handles unexpected inputs appropriately
-    while adhering to organizational standards.
-- question: What is the expected behavior when a supplier's discount tier exceeds
-    the legal or financial limits set in Supplier SLA & Pricing Terms (PROC-DOC-01)?
-    Should these discounts be refused, and if so, what should happen?
-  answer: Supplier discounts exceeding the legal or financial limits set in Supplier
-    SLA & Pricing Terms (PROC-DOC-01) should be refused. The tool should notify the
-    user of the violation and suggest alternative suppliers.
+  rationale: Establish clear guidelines for handling unexpected or out-of-scope port
+    freight lead times.
+- question: Should the system calculate total order landed costs based on unit prices
+    and quantities from spares_catalogue.csv, or should we also consider any additional
+    fees or taxes that might apply?
+  answer: The system should calculate total order landed costs based solely on unit
+    prices and quantities from spares_catalogue.csv.
   answered_by: auto_inferred
-  rationale: This question ensures that the tool handles supplier discount tiers appropriately,
-    adhering to organizational policies.
+  rationale: Clarify the scope of cost calculations to ensure accuracy and alignment
+    with business practices.
 groundability:
   overall_status: partially_grounded
   groundability_ratio: 0.875
@@ -89,13 +103,17 @@ groundability:
       \ \u2014 Supplier SLA & Discount Terms\n(PROC-DOC-01)\nEffective Year: 2026\
       \ | Approved Vendors: SUP-NORDIC, SUP-SINGAPORE, SUP-ROTTERDAM\n1.1 Volume Discounts\
       \ & Minimum Order Quantities\nOrders placed with "
-    - "[spares_catalogue.csv | score=0.83] CSV Table: spares_catalogue.csv\nTotal\
-      \ Rows: 12\nColumns (11): part_id, part_name, category, engine_model, supplier_id,\
-      \ unit_price_usd, moq, stock_qty, lead_time_days, weight_kg, criticality\n \
-      \ - part_id: examples=['SP-MV-1"
-    rationale: The evidence includes the spares catalogue, supplier SLA and pricing
-      terms, and port freight lead times which support various aspects of building
-      a ship-spares procurement assistant.
+    - '[Supplier_SLA_and_Pricing_Terms.pdf | score=0.81] r.
+
+      SUP-ROTTERDAM offers fixed contract pricing (0% volume discount) but guarantees
+      48-hour dispatch
+
+      readiness for in-stock STANDARD items.
+
+      All orders must satisfy the Minimum Order Quantity (MOQ) listed in spares_catalog'
+    rationale: The provided documents cover the technical compliance, supplier SLA
+      and pricing terms, port freight lead times, and spare parts catalogue, which
+      are all necessary for building a ship-spares procurement assistant.
   - requested_topic: port freight lead times
     status: supported
     evidence_score: 1.0
@@ -127,8 +145,9 @@ groundability:
       are strictly prohibited on
 
       standard'
-    rationale: The evidence provides detailed information on port freight rates and
-      customs handling fees, which supports the topic of port freight lead times.
+    rationale: The provided document contains specific details about port freight
+      rates and customs handling fees, which are relevant to calculating port freight
+      lead times.
   - requested_topic: calculates total order landed costs
     status: supported
     evidence_score: 0.706
@@ -155,43 +174,43 @@ groundability:
       \ \u2014 Port Freight Rates & Customs Lead\nTimes (PROC-DOC-03)\nEffective Year:\
       \ 2026 | Hub Ports: Singapore, Rotterdam, Fujairah\n3.1 Air & Sea Freight Rate\
       \ Structure\nAir courier freight is billed at USD 6"
-    rationale: The evidence includes information on port freight rates, customs handling
-      fees, and supplier SLA & discount terms which support the calculation of total
-      order landed costs.
-  - requested_topic: estimated arrival dates, while refusing unapproved emergency
-      credit overrides or legal/weather forecasts outside the docs
+    rationale: The provided documents contain information about port freight rates,
+      customs handling fees, and supplier SLA and pricing terms, which are essential
+      for calculating total order landed costs.
+  - requested_topic: estimated arrival dates
     status: partial
-    evidence_score: 0.664
+    evidence_score: 0.306
     matching_sources:
-    - Supplier_SLA_and_Pricing_Terms.pdf
     - Port_Freight_and_Customs_Schedule.pdf
+    - spares_catalogue.csv
     matching_snippets:
-    - '[Supplier_SLA_and_Pricing_Terms.pdf | score=0.66] ve or wrong-spec items must
-      be reported via an RMA ticket within 21 calendar days of port delivery.
+    - "[Port_Freight_and_Customs_Schedule.pdf | score=0.31] Global Marine Logistics\
+      \ \u2014 Port Freight Rates & Customs Lead\nTimes (PROC-DOC-03)\nEffective Year:\
+      \ 2026 | Hub Ports: Singapore, Rotterdam, Fujairah\n3.1 Air & Sea Freight Rate\
+      \ Structure\nAir courier freight is billed at USD 6"
+    - '[Port_Freight_and_Customs_Schedule.pdf | score=0.30] r kg with a minimum charge
+      of USD 95 per shipment.
 
-      Emergency Aircraft-On-Ground (AOG) priority dispatch adds a flat handling surcharge
-      of USD 380 per
+      3.2 Port Customs Handling Fees & Total Lead Time
 
-      purchase order and cu'
-    - "[Supplier_SLA_and_Pricing_Terms.pdf | score=0.56] Marine Fleet Procurement\
-      \ \u2014 Supplier SLA & Discount Terms\n(PROC-DOC-01)\nEffective Year: 2026\
-      \ | Approved Vendors: SUP-NORDIC, SUP-SINGAPORE, SUP-ROTTERDAM\n1.1 Volume Discounts\
-      \ & Minimum Order Quantities\nOrders placed with "
-    - '[Supplier_SLA_and_Pricing_Terms.pdf | score=0.55] r.
+      Flat port customs clearance & launch delivery fees are: Singapore USD 140, Rotterdam
+      USD 195, and Fujairah
 
-      SUP-ROTTERDAM offers fixed contract pricing (0% volume discount) but guarantees
-      48-hour dispatch
+      USD 210.
 
-      readiness for in-stock STANDARD items.
-
-      All orders must satisfy the Minimum Order Quantity (MOQ) listed in spares_catalog'
-    rationale: The evidence provides information on emergency AOG priority dispatch
-      surcharges but does not include details on estimated arrival dates.
+      Tota'
+    - "[spares_catalogue.csv | score=0.29] 180', '490']\n  - moq: examples=['2', '1',\
+      \ '4', '2']\n  - stock_qty: examples=['14', '6', '20', '11']\n  - lead_time_days:\
+      \ examples=['5', '7', '4', '6']\n  - weight_kg: examples=['8.5', '22.0', '4.2',\
+      \ '6.0']\n  - criticality:"
+    rationale: The provided document contains details about port freight rates and
+      customs handling fees, which can be used to estimate the arrival date of orders.
   unsupported_requests: []
   warnings:
-  - 'PARTIAL COVERAGE: ''estimated arrival dates, while refusing unapproved emergency
-    credit overrides or legal/weather forecasts outside the docs'' is only partially
-    documented (Supplier_SLA_and_Pricing_Terms.pdf, Port_Freight_and_Customs_Schedule.pdf).'
+  - No explicit gaps were found in the corpus for any requested topic. All topics
+    are supported by at least one relevant source.
+  - 'PARTIAL COVERAGE: ''estimated arrival dates'' is only partially documented (Port_Freight_and_Customs_Schedule.pdf,
+    spares_catalogue.csv).'
 human_checkpoint_status: auto_approved
 human_notes: ''
 corpus_summary:

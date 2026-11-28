@@ -1,5 +1,5 @@
 {
-  "agent_id": "agent-6ecfeca0",
+  "agent_id": "agent-0c342ab6",
   "name": "Ship_Spares_Agent",
   "version": 2,
   "brief": "Build a ship-spares procurement assistant for marine fleet superintendents that looks up spare parts from our catalogue CSV, checks supplier discount tiers, compliance certificates, and port freight lead times, and calculates total order landed costs and estimated arrival dates, while refusing unapproved emergency credit overrides or legal/weather forecasts outside the docs.",
@@ -8,20 +8,20 @@
   "judge_model_name": "qwen2.5:1.5b",
   "temperature": 0.08,
   "max_tool_steps": 3,
-  "system_prompt": "This agent is designed for marine fleet superintendents to assist with ship-spares procurement. It will look up spare parts from the catalogue CSV, check supplier discount tiers and compliance certificates, calculate total order landed costs, estimated arrival dates, refuse unapproved emergency credit overrides or legal/weather forecasts outside the provided documents. The tone is formal and all answers must be grounded in the retrieved document excerpts and tool outputs. Any questions touching must-Refuse topics will be refused based on evidence from the provided documents. Exact source filenames from retrieved chunks and tools used are mandatory for calculations, CSV lookups, current date, or weather (only if authorized).\n\nIf the question is out of scope, refuse it based on provided documents and current date.",
+  "system_prompt": "This agent is designed to assist marine fleet superintendents in the procurement of ship-spares by providing accurate and grounded information based on the provided documents and tools. The audience for this assistant are marine fleet superintendents, and the tone should be formal and policy-accurate. The agent must strictly adhere to the requirements and available tools to provide answers that are grounded only from retrieved document excerpts and tool outputs. Any questions touching upon topics explicitly refused based on provided documents or lacking evidence in retrieved chunks must be clearly marked as 'I cannot answer this based on the provided documents'. Additionally, any calculation, CSV lookup, current date, or weather (only if authorized) should use tools whenever required and cite exact source filenames from retrieved chunks. The agent's responses will include a list of used tools for transparency.\n\nFORMAT & COMPLETENESS RULE: Include all key facts, exact numbers, and at least one valid filename in citations; return strict JSON matching the output contract.",
   "retrieval": {
     "chunk_size": 600,
     "chunk_overlap": 100,
-    "top_k": 5,
+    "top_k": 6,
     "hybrid_alpha": 0.5,
-    "min_score_threshold": 0.12,
+    "min_score_threshold": 0.08,
     "chunking_strategy": "heading_recursive",
     "use_query_expansion": false
   },
   "tools": [
     {
       "name": "csv_lookup",
-      "description": "Search, filter, sort, or aggregate rows in CSV files inside the corpus.",
+      "description": "Search, filter, sort, or aggregate rows in CSV, TSV, and XLSX spreadsheets inside the corpus.",
       "justification": "Selected during intake for Ship-Spares Procurement Assistant",
       "required_capabilities": [
         "csv_lookup"
@@ -34,6 +34,53 @@
       "required_capabilities": [
         "calculator"
       ]
+    },
+    {
+      "name": "unit_converter",
+      "description": "Convert engineering, logistics, and maritime units (kg/lb/mt, km/mi/nm, bar/psi, C/F, knots/kmh, L/gal).",
+      "justification": "Selected during intake for Ship-Spares Procurement Assistant",
+      "required_capabilities": [
+        "unit_converter"
+      ]
+    },
+    {
+      "name": "current_date",
+      "description": "Get today's date, day of week, or compute date offsets (add_days) and day differences (start_date, end_date).",
+      "justification": "Selected during intake for Ship-Spares Procurement Assistant",
+      "required_capabilities": [
+        "current_date"
+      ]
+    }
+  ],
+  "custom_tools": [
+    {
+      "name": "lookup_critical_spares",
+      "description": "Filter spares_catalogue.csv to find critical spare parts.",
+      "tool_type": "tabular_filter",
+      "parameters": [],
+      "expression": "",
+      "target_file": "spares_catalogue.csv",
+      "preset_filters": {
+        "criticality": "CRITICAL"
+      },
+      "source_document": "spares_catalogue.csv",
+      "justification": "Improves accuracy by focusing on critical spare parts for procurement decisions."
+    },
+    {
+      "name": "calculate_total_landed_cost",
+      "description": "Calculate total landed cost based on unit prices, quantities, and discounts.",
+      "tool_type": "formula",
+      "parameters": [
+        "unit_price",
+        "quantity",
+        "discount_pct",
+        "freight_usd"
+      ],
+      "expression": "unit_price * quantity * (1 - discount_pct / 100) + freight_usd",
+      "target_file": "",
+      "preset_filters": {},
+      "source_document": "",
+      "justification": "Enhances accuracy in calculating total landed costs by incorporating discounts and freight charges."
     }
   ],
   "output_contract": {
@@ -51,19 +98,25 @@
     "refusal_phrase_prefix": "I cannot answer this based on the provided documents"
   },
   "must_answer_topics": [
-    "supplier_discount_tiers",
-    "compliance_certificates",
-    "total_order_landed_costs",
-    "estimated_arrival_dates"
+    "Supplier Discount Tiers",
+    "Compliance Certificates",
+    "Total Order Landed Costs Calculation",
+    "Emergency Credit Overrides Refusal",
+    "Legal/Weather Forecasts Outside Provided Documents",
+    "Port Freight Lead Times"
   ],
   "must_refuse_topics": [
-    "emergency_credit_overrides",
-    "legal_weather_forecasts_outside_docs",
+    "External Legal or Weather Forecast Sources",
+    "Unapproved Emergency Credit Overrides",
+    "Legal/Weather Forecasts Outside Provided Documents",
+    "unapproved emergency credit overrides",
+    "legal/weather forecasts outside the docs",
     "Questions outside the provided document corpus"
   ],
   "groundability_caveats": [
-    "PARTIAL COVERAGE: 'estimated arrival dates, while refusing unapproved emergency credit overrides or legal/weather forecasts outside the docs' is only partially documented (Supplier_SLA_and_Pricing_Terms.pdf, Port_Freight_and_Customs_Schedule.pdf)."
+    "No explicit gaps were found in the corpus for any requested topic. All topics are supported by at least one relevant source.",
+    "PARTIAL COVERAGE: 'estimated arrival dates' is only partially documented (Port_Freight_and_Customs_Schedule.pdf, spares_catalogue.csv)."
   ],
   "docs_dir": "M:\\MOHAMMAD\\Hackathons\\OceanAI\\demos\\ship_spares\\docs",
-  "created_at": "2026-11-27T15:00:40.815816+00:00"
+  "created_at": "2026-11-28T07:48:47.396249+00:00"
 }

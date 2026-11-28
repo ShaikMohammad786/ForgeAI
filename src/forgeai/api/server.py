@@ -112,6 +112,7 @@ def create_app() -> FastAPI:
                             "provider": data.get("provider"),
                             "model_name": data.get("model_name"),
                             "tools": [t.get("name") for t in data.get("tools", [])],
+                            "custom_tools": [ct.get("name") for ct in data.get("custom_tools", [])],
                             "path": str(p.parent),
                         }
                     )

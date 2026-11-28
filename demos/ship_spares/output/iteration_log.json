@@ -1,36 +1,36 @@
 [
   {
     "iteration": 1,
-    "dominant_failure_category": "wrong_refusal",
+    "dominant_failure_category": "prompt_defect",
     "failure_ids_addressed": [
-      "eval_17",
-      "eval_18",
-      "eval_19",
-      "eval_20",
-      "eval_21"
+      "eval_10",
+      "eval_12",
+      "eval_13",
+      "eval_16",
+      "eval_18"
     ],
-    "diagnosis_summary": "Dominant failure is `wrong_refusal` for out-of-scope questions.",
+    "diagnosis_summary": "Dominant failure is retrieval misses due to low recall and score thresholds.",
     "changes": [
       {
-        "field_path": "retrieval.min_score_threshold",
-        "old_value": 0.08,
-        "new_value": 0.12,
-        "rationale": "Raise score gate to enforce refusal on out-of-scope queries"
+        "field_path": "system_prompt",
+        "old_value": "(len=923)",
+        "new_value": "+ FORMAT & COMPLETENESS RULE: Include all key facts, exact numbers, and at least one valid filename in citations; return s",
+        "rationale": "Repair prompt compliance and fact/citation completeness"
       },
       {
-        "field_path": "system_prompt",
-        "old_value": "(len=733)",
-        "new_value": "+ If the question is out of scope, refuse it based on provided documents and current date.",
-        "rationale": "Clarify answer-vs-refuse boundary"
+        "field_path": "retrieval.top_k",
+        "old_value": 5,
+        "new_value": 6,
+        "rationale": "Provide +1 chunk for multi-document synthesis"
       }
     ],
-    "score_before": 0.7026,
-    "score_after": 0.7227,
+    "score_before": 0.7906,
+    "score_after": 0.8104,
     "pass_rate_before": 0.5833,
-    "pass_rate_after": 0.625,
+    "pass_rate_after": 0.7083,
     "accepted": true,
-    "decision_reason": "Accepted patch (+4.2pp pass rate, +0.020 composite score).",
-    "tokens_used": 67163,
-    "duration_seconds": 221.03
+    "decision_reason": "Accepted patch (+12.5pp pass rate, +0.020 composite score).",
+    "tokens_used": 98871,
+    "duration_seconds": 407.94
   }
 ]
