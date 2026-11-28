@@ -17,5 +17,6 @@ Thumbs.db
 
 # Runtime scratch / cache (never ignore committed demos/*/output/)
 .forgeai_cache/
+.forgeai_ui_builds/
 runs/
 *.log
