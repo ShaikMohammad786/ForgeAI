@@ -73,8 +73,8 @@ def _chunk_sections(
 ) -> list[tuple[RawSection, str]]:
     out: list[tuple[RawSection, str]] = []
     for sec in sections:
-        # Keep CSV schema/row batches compact and intact if reasonably sized
-        limit = max(chunk_size, 850) if sec.doc_type == "csv" else chunk_size
+        # Keep tabular schema/row batches compact and intact if reasonably sized
+        limit = max(chunk_size, 850) if sec.doc_type in {"csv", "tsv", "xlsx"} else chunk_size
         parts = _split_recursive(sec.text, limit, chunk_overlap)
         for p in parts:
             out.append((sec, p))
@@ -94,7 +94,7 @@ def chunk_corpus(
 
     for doc in corpus.documents:
         doc_chunks_start = len(chunks)
-        if strategy == "paragraph_recursive" and doc.summary.doc_type != "csv":
+        if strategy == "paragraph_recursive" and doc.summary.doc_type not in {"csv", "tsv", "xlsx"}:
             normalized = re.sub(r"\n{3,}", "\n\n", doc.full_text)
             pseudo = RawSection(
                 source=doc.summary.filename,

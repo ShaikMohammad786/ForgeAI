@@ -63,3 +63,62 @@ def test_subquery_decomposition_surfaces_multiple_documents(tmp_path: Path) -> N
     sources = {h.chunk.source for h in hits}
     assert "leave.md" in sources
     assert "expenses.md" in sources
+
+
+def test_extended_document_formats_loading(tmp_path: Path) -> None:
+    import docx
+    import openpyxl
+
+    # DOCX with paragraph + table
+    doc = docx.Document()
+    doc.add_heading("Safety Protocol", level=1)
+    doc.add_paragraph("Crew must inspect lifeboats every Monday.")
+    tbl = doc.add_table(rows=2, cols=2)
+    tbl.cell(0, 0).text = "Zone"
+    tbl.cell(0, 1).text = "Interval"
+    tbl.cell(1, 0).text = "Engine Room"
+    tbl.cell(1, 1).text = "Weekly"
+    doc.save(str(tmp_path / "safety.docx"))
+
+    # XLSX workbook
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Inventory"
+    ws.append(["sku", "part_name", "qty"])
+    ws.append(["MP-101", "Fuel Injector", 12])
+    wb.save(str(tmp_path / "parts.xlsx"))
+
+    # TSV, JSONL, YAML, HTML, XML, LOG
+    (tmp_path / "rates.tsv").write_text("port\tfee_usd\nSingapore\t450\n", encoding="utf-8")
+    (tmp_path / "events.jsonl").write_text('{"id": 1, "event": "drydock"}\n{"id": 2, "event": "sea_trial"}\n', encoding="utf-8")
+    (tmp_path / "policy.yaml").write_text("policy:\n  retention_years: 7\n", encoding="utf-8")
+    (tmp_path / "notice.html").write_text("<html><body><h1>Port Notice</h1><p>Berth 4 closed.</p></body></html>", encoding="utf-8")
+    (tmp_path / "manifest.xml").write_text("<manifest><vessel>MV Ocean</vessel></manifest>", encoding="utf-8")
+    (tmp_path / "bridge.log").write_text("2026-11-28 INFO Radar calibrated.\n", encoding="utf-8")
+
+    corpus = load_corpus(tmp_path)
+    names = {d.summary.filename: d for d in corpus.documents}
+    assert set(names.keys()) == {
+        "safety.docx",
+        "parts.xlsx",
+        "rates.tsv",
+        "events.jsonl",
+        "policy.yaml",
+        "notice.html",
+        "manifest.xml",
+        "bridge.log",
+    }
+    assert corpus.has_csv is True
+    assert corpus.has_structured_records is True
+    assert "lifeboats" in names["safety.docx"].full_text
+    assert "Engine Room | Weekly" in names["safety.docx"].full_text
+    assert "Fuel Injector" in names["parts.xlsx"].full_text
+    assert "Singapore" in names["rates.tsv"].full_text
+    assert "sea_trial" in names["events.jsonl"].full_text
+    assert "retention_years: 7" in names["policy.yaml"].full_text
+    assert "Berth 4 closed." in names["notice.html"].full_text
+    assert "MV Ocean" in names["manifest.xml"].full_text
+
+    chunks = chunk_corpus(corpus, chunk_size=300, chunk_overlap=40)
+    assert len(chunks) >= 8
+
