@@ -114,7 +114,7 @@ Every factory run writes a self-contained runnable bundle:
 | :--- | :--- | :--- | :--- |
 | **Demo 1: Shore HR Policy** | **79.2% (19/24)**, composite `0.854` | `calculator`, `current_date` | Matches Human Baseline `79.2%`; beats Human on `eval_04`, loses on `eval_19` |
 | **Demo 2: Ship Spares** | `58.3%` -> **70.8% (17/24)**, composite `0.810` | `csv_lookup`, `calculator`, `unit_converter`, `current_date` + 2 Custom Macros | Iter 1 accepted (+12.5pp); macros `lookup_critical_spares` & `calculate_total_landed_cost` |
-| **Regression Mode (HR v2)** | `66.7%` -> `33.3%` | Re-evaluated against modified HR docs | Detected 2 modified PDFs, 8 newly broken, 4 now ungroundable cases |
+| **Regression Mode (HR v2)** | `79.2%` -> `33.3%` | Re-evaluated against modified HR docs | Detected 2 modified PDFs, 11 newly broken, 4 now ungroundable cases |
 | **Unseen Trap A (0% Grounded)** | **Halted safely** | None synthesized | Refused spacecraft/lunar brief rather than hallucinating |
 | **Unseen Trap B (Port Dispatch)** | **75.0%** (`PortDispatchAssistant`) | `json_record_lookup`, `unit_converter`, `open_meteo_weather` | Flagged unsupported 10-year climate forecast into `must_refuse` |
 

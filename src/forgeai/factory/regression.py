@@ -58,7 +58,11 @@ def run_regression_check(
         if scorecard_path.exists()
         else []
     )
-    old_card = IterationScorecard.model_validate(old_cards_raw[-1]) if old_cards_raw else None
+    accepted_cards = [
+        c for c in old_cards_raw if "[ROLLED BACK]" not in str(c.get("label", ""))
+    ]
+    chosen_raw = accepted_cards[-1] if accepted_cards else (old_cards_raw[-1] if old_cards_raw else None)
+    old_card = IterationScorecard.model_validate(chosen_raw) if chosen_raw else None
 
     new_corpus = load_corpus(new_docs_dir)
     added, modified, removed = diff_manifests(old_manifest, new_corpus.manifest)

@@ -152,6 +152,90 @@ def test_runtime_executes_declarative_custom_macro_end_to_end(monkeypatch, tmp_p
     rt = AgentRuntime(agent, _MacroRuntimeLLM("dummy"), docs_dir_override=docs_dir)
     trace = rt.ask("What is the bulk quote for 10 units at 100 USD each with 10% discount and 80 USD shipping?")
     assert not trace.response.refused
-    assert "calc_bulk_quote" in trace.response.tools_used
+    assert trace.response.tools_used == ["calc_bulk_quote"] or "calc_bulk_quote" in trace.response.tools_used
     assert any(t["tool"] == "calc_bulk_quote" and "980" in t["output"] for t in trace.tool_outputs)
+
+
+def test_regression_uses_last_accepted_scorecard_ignoring_rolled_back(monkeypatch, tmp_path: Path) -> None:
+    import yaml
+    from forgeai.schemas.agent import AgentDefinition, RetrievalConfig
+    from forgeai.schemas.evals import EvalCase, EvalSet, IterationScorecard
+
+    docs_v2 = tmp_path / "docs_v2"
+    docs_v2.mkdir()
+    (docs_v2 / "hr.md").write_text("# Leave\nAnnual leave is 20 days.\n", encoding="utf-8")
+
+    bundle = tmp_path / "agent_bundle"
+    bundle.mkdir()
+    agent = AgentDefinition(
+        agent_id="reg-test",
+        name="RegTestAgent",
+        brief="HR",
+        provider="ollama",
+        model_name="dummy",
+        judge_model_name="dummy",
+        system_prompt="Answer from docs.",
+        retrieval=RetrievalConfig(top_k=3, min_score_threshold=0.0),
+        docs_dir=str(docs_v2),
+        created_at="2026-11-28T00:00:00Z",
+    )
+    (bundle / "agent_definition.yaml").write_text(yaml.safe_dump(agent.model_dump(mode="json")), encoding="utf-8")
+    (bundle / "corpus_manifest.json").write_text("{}", encoding="utf-8")
+    (bundle / "eval_set.json").write_text(
+        EvalSet(
+            generated_at="2026-11-28T00:00:00Z",
+            generator_model="dummy",
+            total_cases=1,
+            cases=[
+                EvalCase(
+                    case_id="eval_01",
+                    category="answerable",
+                    question="Leave days?",
+                    expected_behavior="answer",
+                    source_documents=["hr.md"],
+                    key_facts=["Annual leave is 24 days."],
+                )
+            ],
+        ).model_dump_json(),
+        encoding="utf-8",
+    )
+    cards = [
+        IterationScorecard(
+            iteration=0,
+            label="Baseline (v1)",
+            total_cases=1,
+            passed_cases=1,
+            pass_rate=1.0,
+            mean_composite_score=0.95,
+            mean_groundedness=1.0,
+            mean_fact_recall=1.0,
+            refusal_accuracy=1.0,
+            contract_adherence=1.0,
+        ),
+        IterationScorecard(
+            iteration=1,
+            label="Iteration 1 [ROLLED BACK]",
+            total_cases=1,
+            passed_cases=0,
+            pass_rate=0.0,
+            mean_composite_score=0.2,
+            mean_groundedness=0.2,
+            mean_fact_recall=0.2,
+            refusal_accuracy=0.0,
+            contract_adherence=1.0,
+        ),
+    ]
+    (bundle / "scorecard.json").write_text(json.dumps([c.model_dump(mode="json") for c in cards]), encoding="utf-8")
+
+    dummy_llm = _DeterministicFactoryLLM("dummy")
+    monkeypatch.setattr("forgeai.factory.regression.build_factory_providers", lambda **kwargs: (dummy_llm, dummy_llm))
+
+    diff, _ = run_regression_check(
+        agent_dir=bundle,
+        new_docs_dir=docs_v2,
+        out_dir=tmp_path / "reg_out",
+        use_llm_judge=False,
+    )
+    assert diff.old_pass_rate == 1.0
+
 

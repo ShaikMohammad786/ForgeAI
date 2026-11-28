@@ -174,9 +174,23 @@ def _render_bundle_results(out_dir: Path) -> None:
         st.markdown(files["report.md"])
 
 
+def _read_streamlit_secret_gemini_key() -> str:
+    """Read GEMINI_API_KEY from Streamlit Secrets when deployed on Streamlit Cloud / HF."""
+    try:
+        for k in ("GEMINI_API_KEY", "GOOGLE_API_KEY"):
+            val = st.secrets.get(k, "")
+            if val:
+                return str(val).strip()
+    except Exception:
+        pass
+    return ""
+
+
 def _render_sidebar(cfg: ForgeSettings) -> dict[str, Any]:
     """Render dual/hybrid execution settings & architecture summary in sidebar."""
     status = discover_backends(cfg)
+    secret_gemini_key = _read_streamlit_secret_gemini_key()
+    env_or_secret_gemini = bool(status.gemini_available or secret_gemini_key)
 
     with st.sidebar:
         st.markdown("## ForgeAI Engine Setup")
@@ -185,7 +199,7 @@ def _render_sidebar(cfg: ForgeSettings) -> dict[str, Any]:
         execution_mode = st.radio(
             "Execution Mode",
             options=["Ollama (Local)", "Gemini API (Cloud)", "Hybrid (Mix Generator & Judge)"],
-            index=1 if (not status.ollama_available and status.gemini_available) else 0,
+            index=1 if (not status.ollama_available and env_or_secret_gemini) else 0,
         )
 
         gemini_key_override = st.text_input(
@@ -194,7 +208,8 @@ def _render_sidebar(cfg: ForgeSettings) -> dict[str, Any]:
             type="password",
             help="Leave blank to use GEMINI_API_KEY from .env or Streamlit Secrets.",
         )
-        effective_gemini_ok = bool(gemini_key_override.strip() or status.gemini_available)
+        effective_gemini_key = gemini_key_override.strip() or secret_gemini_key or None
+        effective_gemini_ok = bool(effective_gemini_key or status.gemini_available)
 
         ollama_choices = status.ollama_models or [cfg.ollama_model, cfg.ollama_judge_model]
         gemini_choices = status.gemini_models or [cfg.gemini_model, cfg.gemini_judge_model]
@@ -244,7 +259,7 @@ def _render_sidebar(cfg: ForgeSettings) -> dict[str, Any]:
         "judge_provider": judge_provider,
         "gen_model": gen_model,
         "judge_model": judge_model,
-        "gemini_key_override": gemini_key_override.strip() or None,
+        "gemini_key_override": effective_gemini_key,
         "max_iters": max_iters,
         "eval_cases": eval_cases,
         "max_tokens": int(max_tokens),

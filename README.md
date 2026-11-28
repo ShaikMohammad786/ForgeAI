@@ -14,7 +14,7 @@
 - **Honest Quality Reporting**: Generates `scorecard.md`, `iteration_log.md`, and `report.md` detailing exact passing rates and *what still fails and why*.
 - **Generic Runnable Agent**: CLI (`forgeai chat`), zero-server Streamlit UI (`forgeai ui`, 3-mode Ollama/Gemini/Hybrid), and optional FastAPI REST backend (`forgeai serve`) capable of loading any produced `agent_definition` folder with live tool execution and citations.
 - **Two Committed End-to-End Demos** (run locally on `qwen2.5:3b` generator/agent + `qwen2.5:1.5b` cross-judge):
-  1. `demos/hr_policy/` — **HR Policy Assistant (`ShoreHRPolicyAssistant`)** over 3 multi-page HR PDFs: achieved **`79.2% (19/24)`** pass rate (`0.854` composite, `1.000` contract adherence; `calculator` & `current_date` attached, all 8 off-domain/ungrounded tools rejected), matching the hand-written Human Baseline (`79.2%` vs `79.2%`, ForgeAI beating Human on `eval_04` and Human beating ForgeAI on `eval_19` in [baseline_comparison.md](demos/hr_policy/output/baseline_comparison.md)), plus committed Regression Mode verification (`66.7% -> 33.3%`, 8 newly broken / 4 now ungroundable in [regression_report.md](demos/hr_policy/output/regression_demo/regression_report.md)). See [HR Report](demos/hr_policy/output/report.md).
+  1. `demos/hr_policy/` — **HR Policy Assistant (`ShoreHRPolicyAssistant`)** over 3 multi-page HR PDFs: achieved **`79.2% (19/24)`** pass rate (`0.854` composite, `1.000` contract adherence; `calculator` & `current_date` attached, all 8 off-domain/ungrounded tools rejected), matching the hand-written Human Baseline (`79.2%` vs `79.2%`, ForgeAI beating Human on `eval_04` and Human beating ForgeAI on `eval_19` in [baseline_comparison.md](demos/hr_policy/output/baseline_comparison.md)), plus committed Regression Mode verification (`79.2% -> 33.3%`, 11 newly broken / 4 now ungroundable in [regression_report.md](demos/hr_policy/output/regression_demo/regression_report.md)). See [HR Report](demos/hr_policy/output/report.md).
   2. `demos/ship_spares/` — **Ship-Spares Procurement Assistant (`Ship_Spares_Agent`)** over `spares_catalogue.csv` + 3 supplier/spec/freight PDFs: improved from `58.3% (14/24)` (`0.791`) -> **`70.8% (17/24)`** (`0.810` composite) via accepted Iteration 1 optimization (`csv_lookup`, `calculator`, `unit_converter`, `current_date` attached + 2 AST-verified custom macros `lookup_critical_spares` & `calculate_total_landed_cost`; 6 off-domain tools rejected). See [Ship-Spares Report](demos/ship_spares/output/report.md).
 
 ### Bonus Capabilities Included
@@ -72,8 +72,11 @@ forgeai chat ./demos/hr_policy/output
 # Run regression check when documents change
 forgeai regress --agent ./demos/hr_policy/output --docs ./updated_docs --out ./runs/hr_regression
 
-# Launch Streamlit Factory + Chat Runner UI
+# Launch Streamlit Factory + Chat Runner UI (zero separate server needed)
 forgeai ui
+
+# Optional: Launch FastAPI REST backend with OpenAPI docs at /docs
+forgeai serve --port 8000
 ```
 
 ### 4. Hosting (Hugging Face Spaces / Streamlit Community Cloud)

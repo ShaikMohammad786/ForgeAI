@@ -4,17 +4,17 @@
   "total_cases": 24,
   "passed_cases": 8,
   "pass_rate": 0.3333,
-  "mean_composite_score": 0.5913,
-  "mean_groundedness": 0.6604,
-  "mean_fact_recall": 0.4557,
-  "refusal_accuracy": 0.75,
+  "mean_composite_score": 0.6149,
+  "mean_groundedness": 0.7021,
+  "mean_fact_recall": 0.4696,
+  "refusal_accuracy": 0.7917,
   "contract_adherence": 1.0,
   "by_category": {
     "answerable": {
       "total": 13.0,
       "passed": 1.0,
       "pass_rate": 0.0769,
-      "mean_score": 0.4324
+      "mean_score": 0.4805
     },
     "out_of_scope": {
       "total": 2.0,
@@ -26,14 +26,14 @@
       "total": 9.0,
       "passed": 6.0,
       "pass_rate": 0.6667,
-      "mean_score": 0.8132
+      "mean_score": 0.8067
     }
   },
   "failure_counts": {
     "retrieval_miss": 3,
-    "prompt_defect": 4,
-    "hallucination": 3,
-    "wrong_refusal": 6
+    "prompt_defect": 6,
+    "hallucination": 2,
+    "wrong_refusal": 5
   },
   "verdicts": [
     {
@@ -83,7 +83,7 @@
           "evidence": "The policy states 'Any carried-forward days not used by March 31 are forfeited without cash payout.'"
         }
       ],
-      "latency_ms": 3030.98
+      "latency_ms": 3371.48
     },
     {
       "case_id": "eval_02",
@@ -132,7 +132,7 @@
           "evidence": ""
         }
       ],
-      "latency_ms": 3009.64
+      "latency_ms": 3494.26
     },
     {
       "case_id": "eval_03",
@@ -196,7 +196,7 @@
           "evidence": ""
         }
       ],
-      "latency_ms": 3441.92
+      "latency_ms": 4037.86
     },
     {
       "case_id": "eval_04",
@@ -204,9 +204,14 @@
       "sub_type": "multi_doc_synthesis",
       "question": "What is the total amount of paid sick leave that new hires can receive during their probation period?",
       "expected_behavior": "answer",
-      "actual_answer": "New hires do not have a specific mention of sick leave entitlement in the provided documents. Their sick leave policy applies to full-time permanent shore staff, and no information is given about probationary periods.",
-      "actual_refused": true,
-      "actual_citations": [],
+      "actual_answer": "New hires do not have a specific stipulated amount for paid sick leave during their probation period. The policy only mentions that full-time permanent shore staff accrue 12 days of paid sick leave per calendar year without carryover, and this applies to all employees who become eligible after the probation period.",
+      "actual_refused": false,
+      "actual_citations": [
+        {
+          "source": "HR_Leave_and_Attendance_Policy.pdf",
+          "excerpt": "Shore employees receive 12 days of paid sick leave per calendar year without carryover."
+        }
+      ],
       "actual_tools_used": [],
       "retrieved_sources": [
         "HR_Leave_and_Attendance_Policy.pdf",
@@ -215,21 +220,32 @@
       ],
       "retrieved_top_score": 0.7612,
       "passed": false,
-      "failure_category": "wrong_refusal",
-      "failure_reason": "False refusal on answerable question.",
+      "failure_category": "prompt_defect",
+      "failure_reason": "numeric inaccuracy (0.33)",
       "metrics": {
         "contract_valid": true,
-        "refusal_correct": false,
-        "citation_valid": false,
-        "numeric_accuracy": 0.0,
-        "fact_recall": 0.0,
-        "groundedness": 0.0,
+        "refusal_correct": true,
+        "citation_valid": true,
+        "numeric_accuracy": 0.333,
+        "fact_recall": 0.5,
+        "groundedness": 1.0,
         "verbosity_penalty": 0.0,
         "tool_appropriateness": 1.0,
-        "composite_score": 0.1
+        "composite_score": 0.7249
       },
-      "fact_checks": [],
-      "latency_ms": 2519.22
+      "fact_checks": [
+        {
+          "fact": "New hires receive a specific amount of paid sick leave during their probation period.",
+          "status": "contradicted",
+          "evidence": "The policy states that new hires accrue 12 days of paid sick leave per calendar year without carryover, which applies after the probation period."
+        },
+        {
+          "fact": "New hires do not have a specific stipulated amount for paid sick leave during their probation period.",
+          "status": "supported",
+          "evidence": "The policy explicitly states that new hires accrue 12 days of paid sick leave per calendar year without carryover, which applies after the probation period."
+        }
+      ],
+      "latency_ms": 4583.07
     },
     {
       "case_id": "eval_05",
@@ -288,7 +304,7 @@
           "evidence": "Code_of_Conduct_and_Benefits_Policy.pdf, Page 1, Section: 3.1 Gifts, Hospitality & Conflict of Interest"
         }
       ],
-      "latency_ms": 2708.92
+      "latency_ms": 3102.26
     },
     {
       "case_id": "eval_06",
@@ -320,7 +336,7 @@
         "composite_score": 0.1
       },
       "fact_checks": [],
-      "latency_ms": 1919.71
+      "latency_ms": 1971.89
     },
     {
       "case_id": "eval_07",
@@ -353,7 +369,7 @@
         "composite_score": 0.1
       },
       "fact_checks": [],
-      "latency_ms": 2361.77
+      "latency_ms": 2523.8
     },
     {
       "case_id": "eval_08",
@@ -385,7 +401,7 @@
         "composite_score": 0.1
       },
       "fact_checks": [],
-      "latency_ms": 2402.45
+      "latency_ms": 2534.04
     },
     {
       "case_id": "eval_09",
@@ -441,7 +457,7 @@
           "evidence": "CANDIDATE ANSWER: Shore employees receive 12 days of paid sick leave per calendar year without carryover."
         }
       ],
-      "latency_ms": 4216.23
+      "latency_ms": 4501.52
     },
     {
       "case_id": "eval_10",
@@ -496,7 +512,7 @@
           "evidence": "The retrieved evidence directly states 'Domestic travel meal reimbursement is capped at USD 55 per day and hotel stays at USD 220 per night.'"
         }
       ],
-      "latency_ms": 5355.21
+      "latency_ms": 5698.45
     },
     {
       "case_id": "eval_11",
@@ -529,7 +545,7 @@
         "composite_score": 0.1
       },
       "fact_checks": [],
-      "latency_ms": 2198.3
+      "latency_ms": 2167.9
     },
     {
       "case_id": "eval_12",
@@ -537,7 +553,7 @@
       "sub_type": "tool_calculation",
       "question": "How many days of paid sick leave does a shore employee receive per calendar year, including any carry-over days if they have 12 days already used?",
       "expected_behavior": "answer",
-      "actual_answer": "A shore employee receives up to 13 days of paid sick leave per calendar year, considering the possibility of carry-over from previous years. However, this is contingent on having less than or equal to a maximum of 3 unused annual leave days in Q1 before February 28.",
+      "actual_answer": "A shore employee receives up to 13 days of paid sick leave per calendar year, considering the possibility of carry-over from previous years. However, this is contingent on having less than or equal to a maximum of 3 unused annual leave days carried forward into Q1 before February 28.",
       "actual_refused": false,
       "actual_citations": [
         {
@@ -553,17 +569,17 @@
       "retrieved_top_score": 0.9253,
       "passed": false,
       "failure_category": "hallucination",
-      "failure_reason": "Ungrounded claims/numbers detected: unverified numeric claim",
+      "failure_reason": "Ungrounded claims/numbers detected: ['None']",
       "metrics": {
         "contract_valid": true,
         "refusal_correct": true,
         "citation_valid": true,
         "numeric_accuracy": 0.0,
-        "fact_recall": 0.5,
-        "groundedness": 0.55,
+        "fact_recall": 0.333,
+        "groundedness": 0.3,
         "verbosity_penalty": 0.0,
         "tool_appropriateness": 1.0,
-        "composite_score": 0.5625
+        "composite_score": 0.4415
       },
       "fact_checks": [
         {
@@ -578,31 +594,11 @@
         },
         {
           "fact": "Shore employees receive an annual professional training and certification allowance of USD 1,500 per calendar year.",
-          "status": "supported",
-          "evidence": "Shore staff receive an annual professional training and certification allowance of USD 1,500 per calendar year."
-        },
-        {
-          "fact": "Unused accrued annual leave (excluding forfeited prior-year days past March 31) is paid out on final settlement.",
-          "status": "supported",
-          "evidence": "Unused accrued annual leave (excluding forfeited prior-year days past March 31) is paid out on final settlement."
-        },
-        {
-          "fact": "Shore staff must never solicit gifts from suppliers or port agents, and unsolicited nominal gifts or hospitality exceeding USD 50 in cumulative value per vendor per calendar quarter must be declined or surrendered to Compliance.",
-          "status": "supported",
-          "evidence": "Shore staff must never solicit gifts from suppliers or port agents. Unsolicited nominal gifts or hospitality exceeding USD 50 in cumulative value per vendor per calendar quarter must be declined or surrendered to Compliance."
-        },
-        {
-          "fact": "After probation, standard written resignation notice is 30 calendar days for Job Bands A through C and 60 calendar days for Job Band D and above.",
-          "status": "supported",
-          "evidence": "After probation, standard written resignation notice is 30 calendar days for Job Bands A through C and 60 calendar days for Job Band D and above."
-        },
-        {
-          "fact": "Shore staff receive an annual sick leave of 12 days per calendar year without carryover.",
-          "status": "supported",
-          "evidence": "Shore employees receive 12 days of paid sick leave per calendar year without carryover."
+          "status": "missing",
+          "evidence": ""
         }
       ],
-      "latency_ms": 6156.61
+      "latency_ms": 5214.68
     },
     {
       "case_id": "eval_13",
@@ -656,7 +652,7 @@
           "evidence": "Candidate answer: 'After probation, standard written resignation notice is 30 calendar days for Job Bands A through C and 60 calendar days for Job Band D and above.'"
         }
       ],
-      "latency_ms": 4416.78
+      "latency_ms": 4464.17
     },
     {
       "case_id": "eval_14",
@@ -664,7 +660,7 @@
       "sub_type": "tool_calculation",
       "question": "How much of the annual professional training allowance (USD 1,500) must shore staff pay out if they receive full-time group medical insurance coverage?",
       "expected_behavior": "answer",
-      "actual_answer": "Full-time shore staff do not need to pay for the annual professional training and certification allowance as it is subject to line manager pre-approval and course completion proof, with a 20% employee premium co-pay split covered by the employer.",
+      "actual_answer": "Shore staff do not need to pay for the annual professional training and certification allowance as it is subject to line manager pre-approval and course completion proof, with a 20% employee premium co-pay split covered by the employer.",
       "actual_refused": false,
       "actual_citations": [
         {
@@ -679,24 +675,24 @@
       ],
       "retrieved_top_score": 0.9712,
       "passed": false,
-      "failure_category": "hallucination",
-      "failure_reason": "Ungrounded claims/numbers detected: ['None', \"Unverified excerpt in 'Code_of_Conduct_and_Benefits_Policy.pdf': 'Full-time shore staff receive an annual professional trainin'\"]",
+      "failure_category": "prompt_defect",
+      "failure_reason": "missing/invalid citation; missed expected facts despite retrieval (recall=0.25)",
       "metrics": {
         "contract_valid": true,
         "refusal_correct": true,
         "citation_valid": false,
         "numeric_accuracy": 0.5,
         "fact_recall": 0.25,
-        "groundedness": 0.5,
+        "groundedness": 0.75,
         "verbosity_penalty": 0.0,
         "tool_appropriateness": 1.0,
-        "composite_score": 0.3875
+        "composite_score": 0.45
       },
       "fact_checks": [
         {
-          "fact": "Full-time shore staff do not need to pay for the annual professional training and certification allowance as it is subject to line manager pre-approval and course completion proof, with a 20% employee premium co-pay split covered by the employer.",
+          "fact": "Shore staff do not need to pay for the annual professional training and certification allowance as it is subject to line manager pre-approval and course completion proof, with a 20% employee premium co-pay split covered by the employer.",
           "status": "supported",
-          "evidence": "3.4 Resignation Notice Periods"
+          "evidence": "Company group medical insurance covers shore staff and eligible dependents with an 80% employer / 20% employee premium co-pay split."
         },
         {
           "fact": "Actual or potential conflicts of interest (e.g., family ownership in a marine supplier) must be disclosed in writing to Compliance within 10 business days.",
@@ -704,7 +700,7 @@
           "evidence": ""
         }
       ],
-      "latency_ms": 4831.74
+      "latency_ms": 4694.14
     },
     {
       "case_id": "eval_15",
@@ -768,7 +764,7 @@
           "evidence": "3.2 Ethics Reporting & Anti-Retaliation"
         }
       ],
-      "latency_ms": 7210.02
+      "latency_ms": 5112.72
     },
     {
       "case_id": "eval_16",
@@ -776,7 +772,7 @@
       "sub_type": "ambiguous_phrasing",
       "question": "What is the difference between 'standard written resignation notice' and 'written resignation notice' in Oceanic Shore Operations?",
       "expected_behavior": "answer",
-      "actual_answer": "'Standard written resignation notice' refers to a 30 calendar days requirement for Job Bands A through C, while 'written resignation notice' requires 60 calendar days for Job Band D and above.",
+      "actual_answer": "'Standard written resignation notice' refers to a 30 calendar days requirement, while 'Written resignation notice' can be longer for higher job bands (60 calendar days).",
       "actual_refused": false,
       "actual_citations": [
         {
@@ -806,17 +802,22 @@
       },
       "fact_checks": [
         {
-          "fact": "'Standard written resignation notice' refers to a 30 calendar days requirement for Job Bands A through C, while 'written resignation notice' requires 60 calendar days for Job Band D and above.",
+          "fact": "'Standard written resignation notice' refers to a 30 calendar days requirement, while 'Written resignation notice' can be longer for higher job bands (60 calendar days).",
           "status": "supported",
-          "evidence": "Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.4 Resignation Notice Periods"
+          "evidence": "After probation, standard written resignation notice is 30 calendar days for Job Bands A through C and 60 calendar days for Job Band D and above."
         },
         {
-          "fact": "'Standard written resignation notice' refers to a 30 calendar days requirement for Job Bands A through C, while 'written resignation notice' requires 60 calendar days for Job Band D and above.",
+          "fact": "'Standard written resignation notice' refers to a 30 calendar days requirement, while 'Written resignation notice' can be longer for higher job bands (60 calendar days).",
           "status": "supported",
-          "evidence": "Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.4 Resignation Notice Periods"
+          "evidence": "After probation, standard written resignation notice is 30 calendar days for Job Bands A through C and 60 calendar days for Job Band D and above."
+        },
+        {
+          "fact": "'Standard written resignation notice' refers to a 30 calendar days requirement, while 'Written resignation notice' can be longer for higher job bands (60 calendar days).",
+          "status": "supported",
+          "evidence": "After probation, standard written resignation notice is 30 calendar days for Job Bands A through C and 60 calendar days for Job Band D and above."
         }
       ],
-      "latency_ms": 4624.94
+      "latency_ms": 4160.19
     },
     {
       "case_id": "eval_17",
@@ -881,7 +882,7 @@
           "evidence": "Code_of_Conduct_and_Benefits_Policy.pdf, Page 1, Section: 3.4 Resignation Notice Periods"
         }
       ],
-      "latency_ms": 4795.1
+      "latency_ms": 4191.51
     },
     {
       "case_id": "eval_18",
@@ -914,7 +915,7 @@
         "composite_score": 1.0
       },
       "fact_checks": [],
-      "latency_ms": 2396.93
+      "latency_ms": 2336.69
     },
     {
       "case_id": "eval_19",
@@ -922,12 +923,12 @@
       "sub_type": "near_domain_out_of_scope | groundability_gap",
       "question": "What is the legal requirement for sick leave in our country?",
       "expected_behavior": "refuse",
-      "actual_answer": "The legal requirement for sick leave varies by jurisdiction. The provided document only specifies that full-time shore staff receive 12 days of paid sick leave per calendar year without carryover, and a medical certificate from a licensed physician is mandatory for any absence exceeding 3 consecutive working days.",
+      "actual_answer": "The legal requirement for sick leave in your organization is that full-time permanent shore staff receive 12 days of paid sick leave per calendar year without carryover. A licensed physician's medical certificate is mandatory for any sick leave absence exceeding 3 consecutive working days.",
       "actual_refused": false,
       "actual_citations": [
         {
           "source": "HR_Leave_and_Attendance_Policy.pdf",
-          "excerpt": "Shore employees receive 12 days of paid sick leave per calendar year without carryover. A licensed physician's medical certificate is mandatory for any sick leave absence exceeding"
+          "excerpt": "Shore employees receive 12 days of paid sick leave per calendar year without carryover."
         }
       ],
       "actual_tools_used": [],
@@ -952,7 +953,7 @@
         "composite_score": 0.25
       },
       "fact_checks": [],
-      "latency_ms": 5869.38
+      "latency_ms": 4312.34
     },
     {
       "case_id": "eval_20",
@@ -1010,7 +1011,7 @@
           "evidence": "Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest"
         }
       ],
-      "latency_ms": 5602.89
+      "latency_ms": 4705.4
     },
     {
       "case_id": "eval_21",
@@ -1068,7 +1069,7 @@
           "evidence": "Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest"
         }
       ],
-      "latency_ms": 5960.81
+      "latency_ms": 4092.56
     },
     {
       "case_id": "eval_22",
@@ -1080,8 +1081,12 @@
       "actual_refused": false,
       "actual_citations": [
         {
-          "source": "Code_of_Conduct_and_Benefits_Policy.pdf",
-          "excerpt": "Cash or cash-equivalent gifts (including gift cards) of any value are strictly prohibited."
+          "source": "Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest",
+          "excerpt": ""
+        },
+        {
+          "source": "Code_of_Conduct_and_Benefits_Policy.pdf | Page 2 | Section: 3.1 Gifts, Hospitality & Conflict of Interest",
+          "excerpt": ""
         }
       ],
       "actual_tools_used": [],
@@ -1141,7 +1146,7 @@
           "evidence": "Retrieved Evidence: Cash or cash-equivalent gifts (including gift cards) of any value are strictly prohibited. This is the same as the expected key fact, but it's not a contradiction."
         }
       ],
-      "latency_ms": 3328.27
+      "latency_ms": 4068.75
     },
     {
       "case_id": "eval_23",
@@ -1199,7 +1204,7 @@
           "evidence": "[Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.1 Gifts, Hospitality & Conflict of Interest]"
         }
       ],
-      "latency_ms": 3857.8
+      "latency_ms": 3947.42
     },
     {
       "case_id": "eval_24",
@@ -1267,7 +1272,7 @@
           "evidence": "Source: Code_of_Conduct_and_Benefits_Policy.pdf | Page 1 | Section: 3.2 Ethics Reporting & Anti-Retaliation"
         }
       ],
-      "latency_ms": 4397.23
+      "latency_ms": 3980.5
     }
   ]
 }

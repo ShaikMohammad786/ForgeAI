@@ -7,7 +7,7 @@
     "Remote_Work_and_Expense_Policy.pdf"
   ],
   "removed_files": [],
-  "old_pass_rate": 0.6667,
+  "old_pass_rate": 0.7917,
   "new_pass_rate": 0.3333,
   "newly_broken": [
     {
@@ -19,6 +19,12 @@
     {
       "case_id": "eval_02",
       "question": "What is the total amount of paid sick leave that full-time permanent shore staff receive per calendar year?",
+      "failure_category": "prompt_defect",
+      "failure_reason": "numeric inaccuracy (0.33)"
+    },
+    {
+      "case_id": "eval_04",
+      "question": "What is the total amount of paid sick leave that new hires can receive during their probation period?",
       "failure_category": "prompt_defect",
       "failure_reason": "numeric inaccuracy (0.33)"
     },
@@ -47,6 +53,12 @@
       "failure_reason": "False refusal on answerable question."
     },
     {
+      "case_id": "eval_09",
+      "question": "What is the maximum amount for home-office ergonomic equipment stipend per 24 months?",
+      "failure_category": "hallucination",
+      "failure_reason": "Ungrounded claims/numbers detected: unverified numeric claim"
+    },
+    {
       "case_id": "eval_11",
       "question": "What is the reimbursement rate for personal vehicle business mileage?",
       "failure_category": "wrong_refusal",
@@ -56,7 +68,13 @@
       "case_id": "eval_12",
       "question": "How many days of paid sick leave does a shore employee receive per calendar year, including any carry-over days if they have 12 days already used?",
       "failure_category": "hallucination",
-      "failure_reason": "Ungrounded claims/numbers detected: unverified numeric claim"
+      "failure_reason": "Ungrounded claims/numbers detected: ['None']"
+    },
+    {
+      "case_id": "eval_14",
+      "question": "How much of the annual professional training allowance (USD 1,500) must shore staff pay out if they receive full-time group medical insurance coverage?",
+      "failure_category": "prompt_defect",
+      "failure_reason": "missing/invalid citation; missed expected facts despite retrieval (recall=0.25)"
     }
   ],
   "newly_fixed": [],
@@ -66,24 +84,6 @@
       "question": "What is the probation notice period for Job Band D and above shore employees?",
       "failure_category": "prompt_defect",
       "failure_reason": "missing/invalid citation; missed expected facts despite retrieval (recall=0.40); numeric inaccuracy (0.25)"
-    },
-    {
-      "case_id": "eval_04",
-      "question": "What is the total amount of paid sick leave that new hires can receive during their probation period?",
-      "failure_category": "wrong_refusal",
-      "failure_reason": "False refusal on answerable question."
-    },
-    {
-      "case_id": "eval_09",
-      "question": "What is the maximum amount for home-office ergonomic equipment stipend per 24 months?",
-      "failure_category": "hallucination",
-      "failure_reason": "Ungrounded claims/numbers detected: unverified numeric claim"
-    },
-    {
-      "case_id": "eval_14",
-      "question": "How much of the annual professional training allowance (USD 1,500) must shore staff pay out if they receive full-time group medical insurance coverage?",
-      "failure_category": "hallucination",
-      "failure_reason": "Ungrounded claims/numbers detected: ['None', \"Unverified excerpt in 'Code_of_Conduct_and_Benefits_Policy.pdf': 'Full-time shore staff receive an annual professional trainin'\"]"
     },
     {
       "case_id": "eval_17",
