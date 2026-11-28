@@ -207,3 +207,69 @@ class HybridRetriever:
                 )
             )
         return results
+
+    @staticmethod
+    def _decompose_query(query: str) -> list[str]:
+        """Split complex multi-document queries into focused sub-queries without LLM latency."""
+        parts = re.split(
+            r"\b(?:and|plus|versus|vs\.?|including|along\s+with)\b|[,;?]+",
+            query,
+            flags=re.IGNORECASE,
+        )
+        sub_queries: list[str] = []
+        for p in parts:
+            clean = re.sub(r"\s+", " ", p).strip()
+            tokens = [t for t in _tokenize(clean) if len(t) >= 3]
+            if len(tokens) >= 2 and len(clean) >= 8:
+                sub_queries.append(clean)
+        return list(dict.fromkeys(sub_queries))[:4]
+
+    def search_with_decomposition(
+        self,
+        query: str,
+        config: RetrievalConfig | None = None,
+        *,
+        apply_threshold: bool = True,
+    ) -> list[RetrievedChunk]:
+        """Run hybrid search with multi-doc sub-query decomposition & source-diverse merge."""
+        cfg = config or RetrievalConfig()
+        base_hits = self.search(query, cfg, apply_threshold=apply_threshold)
+        sub_queries = self._decompose_query(query)
+        if len(sub_queries) < 2:
+            return base_hits
+
+        merged: dict[str, RetrievedChunk] = {h.chunk.chunk_id: h for h in base_hits}
+        sub_cfg = cfg.model_copy(update={"top_k": max(2, (cfg.top_k // 2) + 1)})
+        for sq in sub_queries:
+            for h in self.search(sq, sub_cfg, apply_threshold=apply_threshold):
+                prev = merged.get(h.chunk.chunk_id)
+                if prev is None or h.score > prev.score:
+                    merged[h.chunk.chunk_id] = h
+
+        if not merged:
+            return []
+
+        ranked = sorted(merged.values(), key=lambda x: x.score, reverse=True)
+        # Ensure at least the strongest hit from each distinct matched source enters top_k
+        selected: list[RetrievedChunk] = []
+        seen_ids: set[str] = set()
+        seen_sources: set[str] = set()
+
+        for h in ranked:
+            if h.chunk.source not in seen_sources:
+                selected.append(h)
+                seen_ids.add(h.chunk.chunk_id)
+                seen_sources.add(h.chunk.source)
+                if len(selected) >= cfg.top_k:
+                    break
+
+        if len(selected) < cfg.top_k:
+            for h in ranked:
+                if h.chunk.chunk_id not in seen_ids:
+                    selected.append(h)
+                    seen_ids.add(h.chunk.chunk_id)
+                if len(selected) >= cfg.top_k:
+                    break
+
+        selected.sort(key=lambda x: x.score, reverse=True)
+        return selected[: cfg.top_k]

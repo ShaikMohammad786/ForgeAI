@@ -87,66 +87,117 @@ def main() -> None:
         "Brief + Documents -> Intake & Groundability Guard -> Declarative Agent + Prompt Tournament -> >=20 Verified Evals -> Debiased Judge -> Targeted Optimizer -> Runnable Agent"
     )
 
-    # Sidebar: Provider Selector (Ollama Local vs Gemini Interactions API from .env)
+    # Sidebar: 3-Mode Provider Selector (Ollama Local vs Gemini API vs Hybrid Cross-Provider)
     with st.sidebar:
         st.header("Model Backend")
         default_is_gemini = (
             cfg.provider == "gemini"
             or (not backends.ollama_available and backends.gemini_available)
         )
+        mode_options = [
+            "Ollama (Local Open Models)",
+            "Gemini API (Interactions API / .env)",
+            "Hybrid (Cross-Provider Agent + Judge)",
+        ]
         provider_label = st.radio(
-            "Select LLM Provider",
-            options=["Ollama (Local Open Models)", "Gemini API (Interactions API / .env)"],
+            "Select LLM Mode",
+            options=mode_options,
             index=1 if default_is_gemini else 0,
         )
-        selected_provider = "ollama" if provider_label.startswith("Ollama") else "gemini"
 
         gemini_key_override = ""
-        if selected_provider == "ollama":
+        env_key_present = bool(cfg.effective_gemini_key)
+        ollama_choices = backends.ollama_models or [cfg.ollama_model, cfg.ollama_judge_model]
+        gemini_choices = backends.gemini_models
+
+        def _pick_provider_ui(role_label: str, default_prov: str, key_prefix: str) -> tuple[str, str]:
+            prov = st.selectbox(
+                f"{role_label} Provider",
+                options=["ollama", "gemini"],
+                index=0 if default_prov == "ollama" else 1,
+                key=f"{key_prefix}_prov",
+            )
+            if prov == "ollama":
+                if backends.ollama_available and backends.ollama_models:
+                    default_idx = 0 if key_prefix == "gen" else (
+                        backends.ollama_models.index(cfg.ollama_judge_model)
+                        if cfg.ollama_judge_model in backends.ollama_models
+                        else (1 if len(backends.ollama_models) > 1 else 0)
+                    )
+                    m_name = st.selectbox(
+                        f"{role_label} Model",
+                        options=ollama_choices,
+                        index=default_idx,
+                        key=f"{key_prefix}_model_ol",
+                    )
+                else:
+                    m_name = st.text_input(
+                        f"{role_label} Ollama Model",
+                        value=cfg.ollama_model if key_prefix == "gen" else cfg.ollama_judge_model,
+                        key=f"{key_prefix}_model_ol_txt",
+                    )
+            else:
+                default_idx = 0 if key_prefix == "gen" else (1 if len(gemini_choices) > 1 else 0)
+                m_name = st.selectbox(
+                    f"{role_label} Model",
+                    options=gemini_choices,
+                    index=default_idx,
+                    key=f"{key_prefix}_model_gm",
+                )
+            return prov, m_name
+
+        if provider_label.startswith("Ollama"):
+            selected_provider = "ollama"
+            judge_provider = "ollama"
             if backends.ollama_available and backends.ollama_models:
                 st.success(f"Ollama online ({len(backends.ollama_models)} models)")
-                gen_model = st.selectbox(
-                    "Factory & Agent Model",
-                    options=backends.ollama_models,
-                    index=0,
+                gen_model = st.selectbox("Factory & Agent Model", options=ollama_choices, index=0)
+                default_j = (
+                    ollama_choices.index(cfg.ollama_judge_model)
+                    if cfg.ollama_judge_model in ollama_choices
+                    else (1 if len(ollama_choices) > 1 else 0)
                 )
-                judge_options = backends.ollama_models
-                default_judge_idx = (
-                    judge_options.index(cfg.ollama_judge_model)
-                    if cfg.ollama_judge_model in judge_options
-                    else (1 if len(judge_options) > 1 else 0)
-                )
-                judge_model = st.selectbox(
-                    "Judge Model (Cross-Judge reduces bias)",
-                    options=judge_options,
-                    index=default_judge_idx,
-                )
+                judge_model = st.selectbox("Judge Model (Cross-Judge)", options=ollama_choices, index=default_j)
             else:
-                st.warning("Ollama server not reachable on localhost:11434. Start `ollama serve` or switch to Gemini API.")
+                st.warning("Ollama server not reachable on localhost:11434. Start `ollama serve` or switch to Gemini/Hybrid.")
                 gen_model = st.text_input("Ollama Model", value=cfg.ollama_model)
                 judge_model = st.text_input("Ollama Judge Model", value=cfg.ollama_judge_model)
-        else:
-            env_key_present = bool(cfg.effective_gemini_key)
+        elif provider_label.startswith("Gemini"):
+            selected_provider = "gemini"
+            judge_provider = "gemini"
             if env_key_present:
                 st.success("GEMINI_API_KEY loaded from .env")
             else:
-                st.info("GEMINI_API_KEY not found in .env — enter key below for this session.")
+                st.info("GEMINI_API_KEY not found in .env — enter key below.")
             gemini_key_override = st.text_input(
                 "Gemini API Key (optional override)",
                 value="",
                 type="password",
                 placeholder="Using .env GEMINI_API_KEY" if env_key_present else "AIza...",
             )
-            gen_model = st.selectbox(
-                "Factory & Agent Model",
-                options=backends.gemini_models,
-                index=0,
-            )
+            gen_model = st.selectbox("Factory & Agent Model", options=gemini_choices, index=0)
             judge_model = st.selectbox(
                 "Judge Model (Cross-Judge)",
-                options=backends.gemini_models,
-                index=1 if len(backends.gemini_models) > 1 else 0,
+                options=gemini_choices,
+                index=1 if len(gemini_choices) > 1 else 0,
             )
+        else:
+            st.caption("Run agent generation & runtime on one provider and blind judging on another.")
+            if backends.ollama_available:
+                st.success(f"Ollama online ({len(backends.ollama_models)} models)")
+            else:
+                st.warning("Ollama offline on localhost:11434")
+            if env_key_present:
+                st.success("GEMINI_API_KEY loaded from .env")
+            selected_provider, gen_model = _pick_provider_ui("Factory & Agent", "ollama", "gen")
+            judge_provider, judge_model = _pick_provider_ui("Judge", "gemini", "jdg")
+            if selected_provider == "gemini" or judge_provider == "gemini":
+                gemini_key_override = st.text_input(
+                    "Gemini API Key (optional override)",
+                    value="",
+                    type="password",
+                    placeholder="Using .env GEMINI_API_KEY" if env_key_present else "AIza...",
+                )
 
         st.divider()
         st.header("Factory Guardrails")
@@ -215,6 +266,7 @@ def main() -> None:
                         f_llm, j_llm = build_factory_providers(
                             provider=selected_provider,
                             model_name=gen_model,
+                            judge_provider=judge_provider,
                             judge_model_name=judge_model,
                             gemini_api_key=gemini_key_override or None,
                             budget=budget,
@@ -294,6 +346,7 @@ def main() -> None:
                     f_llm, j_llm = build_factory_providers(
                         provider=selected_provider,
                         model_name=gen_model,
+                        judge_provider=judge_provider,
                         judge_model_name=judge_model,
                         gemini_api_key=gemini_key_override or None,
                         budget=budget,
@@ -446,6 +499,7 @@ def main() -> None:
                         out_dir=reg_out,
                         provider=selected_provider,
                         model_name=gen_model,
+                        judge_provider=judge_provider,
                         judge_model_name=judge_model,
                         gemini_api_key=gemini_key_override or None,
                         use_llm_judge=use_llm_judge,

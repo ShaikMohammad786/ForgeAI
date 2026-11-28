@@ -227,7 +227,9 @@ class AgentRuntime:
         assert self._retriever is not None
         t0 = time.perf_counter()
 
-        hits = self._retriever.search(question, self.agent.retrieval, apply_threshold=True)
+        hits = self._retriever.search_with_decomposition(
+            question, self.agent.retrieval, apply_threshold=True
+        )
         context_block = self._format_context(hits)
         tools_block = format_tools_for_prompt(self.agent.tools)
 

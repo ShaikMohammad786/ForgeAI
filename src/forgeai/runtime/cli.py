@@ -119,6 +119,7 @@ def build(
     out: Path = typer.Option(..., "--out", "-o", help="Output directory for generated agent and audit bundle."),
     provider: Optional[str] = typer.Option(None, "--provider", "-p", help="LLM provider: ollama | gemini | auto"),
     model: Optional[str] = typer.Option(None, "--model", "-m", help="Generator & agent model name."),
+    judge_provider: Optional[str] = typer.Option(None, "--judge-provider", help="Optional separate judge provider (ollama | gemini) for Hybrid mode."),
     judge_model: Optional[str] = typer.Option(None, "--judge-model", help="Separate judge model name."),
     unattended: bool = typer.Option(True, "--unattended/--interactive", help="Run unattended or prompt interactively with <=5 questions + checkpoint."),
     max_iterations: int = typer.Option(3, "--max-iterations", min=0, max=3, help="Max Critic-Optimizer iterations (0-3)."),
@@ -144,6 +145,7 @@ def build(
         out_dir=out,
         provider=provider,
         model_name=model,
+        judge_provider=judge_provider,
         judge_model_name=judge_model,
         unattended=unattended,
         answer_callback=_cli_answer_callback,
@@ -304,6 +306,7 @@ def baseline(
         out_md=out_md,
         provider=provider,
         model_name=model,
+        judge_provider=judge_provider,
         judge_model_name=judge_model,
     )
     console.print(

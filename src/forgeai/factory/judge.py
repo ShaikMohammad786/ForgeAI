@@ -87,20 +87,63 @@ def _compute_numeric_accuracy(key_facts: list[str], answer: str) -> float:
 def _check_citations(
     citations: list[dict[str, str]],
     valid_sources: set[str],
-    retrieved_sources: list[str],
-) -> bool:
+    retrieved_chunks: list[Any],
+    tool_outputs: list[dict[str, Any]] | None = None,
+) -> tuple[bool, list[str]]:
+    """Verify cited source filenames AND verbatim/token overlap of cited excerpts."""
     if not citations:
-        return False
+        return False, []
+
     valid_lower = {s.lower() for s in valid_sources}
-    ret_lower = {s.lower() for s in retrieved_sources}
+    chunks_by_src: dict[str, str] = {}
+    for h in retrieved_chunks:
+        src_low = h.chunk.source.lower()
+        chunks_by_src[src_low] = (chunks_by_src.get(src_low, "") + "\n" + h.chunk.text).strip()
+    tool_blob = "\n".join(str(t.get("output", "")) for t in (tool_outputs or [])).lower()
+
+    has_valid_cit = False
+    fabricated: list[str] = []
+
     for c in citations:
         src = str(c.get("source") or "").strip().lower()
+        excerpt = re.sub(r"\s+", " ", str(c.get("excerpt") or "")).strip()
         if not src:
             continue
-        if src in valid_lower or any(src in v or v in src for v in valid_lower):
-            if not ret_lower or src in ret_lower or any(src in r or r in src for r in ret_lower):
-                return True
-    return False
+
+        matched_valid = src in valid_lower or any(src in v or v in src for v in valid_lower)
+        if not matched_valid:
+            fabricated.append(f"Unknown source '{c.get('source')}'")
+            continue
+
+        # Collect text for this cited source from retrieved chunks (or any retrieved + tool output)
+        matching_text = ""
+        for k, txt in chunks_by_src.items():
+            if src == k or src in k or k in src:
+                matching_text += "\n" + txt
+        matching_lower = re.sub(r"\s+", " ", (matching_text + "\n" + tool_blob).lower()).strip()
+
+        if chunks_by_src and not matching_text.strip():
+            fabricated.append(f"Source '{c.get('source')}' was not retrieved")
+            continue
+
+        # Verbatim excerpt check when excerpt has >= 3 words
+        ex_words = [
+            w.lower()
+            for w in re.findall(r"[a-zA-Z0-9_-]{3,}", excerpt)
+            if w.lower() not in _STOPWORDS
+        ]
+        if len(ex_words) >= 3 and matching_lower:
+            ex_nums = _extract_numbers(excerpt)
+            nums_ok = all(n in matching_lower for n in ex_nums)
+            substr_ok = excerpt[:36].lower() in matching_lower
+            word_cov = sum(1 for w in ex_words if w in matching_lower) / len(ex_words)
+            if (not nums_ok) or (not substr_ok and word_cov < 0.50):
+                fabricated.append(f"Unverified excerpt in '{c.get('source')}': '{excerpt[:60]}'")
+                continue
+
+        has_valid_cit = True
+
+    return has_valid_cit and not fabricated, fabricated
 
 
 def _evidence_contains_claim(claim: str, evidence_text: str) -> bool:
@@ -144,9 +187,12 @@ def evaluate_single_case(
     evidence_text = "\n\n".join(evidence_parts) or "NO EVIDENCE RETRIEVED."
 
     contract_valid = bool(trace.raw_contract_valid and (resp.answer or "").strip())
-    cit_valid = _check_citations(resp.citations, valid_sources, retrieved_sources)
+    cit_valid, fabricated_citations = _check_citations(
+        resp.citations, valid_sources, trace.retrieved_chunks, trace.tool_outputs
+    )
     if expected_refuse and actual_refused:
         cit_valid = True  # Refusals do not require document citations
+        fabricated_citations = []
 
     # Tool appropriateness
     tool_app = 1.0
@@ -235,11 +281,15 @@ def evaluate_single_case(
         fact_recall = round(min(1.0, max(0.0, 0.5 * det_recall + 0.5 * llm_recall)), 3)
         numeric_acc = min(1.0, max(0.0, numeric_acc))
 
-        # Groundedness check: unverified numbers/SKUs are high-severity hallucination signals
+        # Groundedness check: unverified numbers/SKUs and fabricated citation excerpts
         ans_nums = set(_extract_numbers(resp.answer))
         ev_nums = set(_extract_numbers(evidence_text))
         hallucinated_nums = [n for n in ans_nums if n not in ev_nums]
-        penalty = 0.25 * len(unsupported_claims) + 0.45 * len(hallucinated_nums)
+        unsupported_claims.extend(fabricated_citations)
+        penalty = (
+            0.25 * len(unsupported_claims)
+            + 0.45 * len(hallucinated_nums)
+        )
         groundedness = round(max(0.0, 1.0 - penalty), 3)
 
     if expected_refuse:

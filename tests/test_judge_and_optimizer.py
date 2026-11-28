@@ -243,3 +243,32 @@ def test_judge_recognizes_natural_refusal_and_filters_schema_examples() -> None:
     )
     assert verdict.actual_refused is True
     assert verdict.passed is True
+
+
+def test_judge_rejects_fabricated_citation_excerpt() -> None:
+    judge = _SimpleJudge("j")
+    chunk = DocumentChunk("id1", "hr.md", "hr.md", "md", "Sec 1", "Leave", "Annual leave is 24 days.")
+    hit = RetrievedChunk(chunk=chunk, score=0.9, bm25_score=0.9, dense_score=0.9)
+    case = EvalCase(
+        case_id="c_cit",
+        category="answerable",
+        question="Annual leave?",
+        expected_behavior="answer",
+        source_documents=["hr.md"],
+        key_facts=["Annual leave is 24 days."],
+    )
+    bad_cit = evaluate_single_case(
+        case,
+        ExecutionTrace(
+            response=AgentResponse(
+                answer="Annual leave is 24 days.",
+                citations=[{"source": "hr.md", "excerpt": "Employees receive 99 yacht days annually"}],
+            ),
+            retrieved_chunks=[hit],
+        ),
+        judge,
+        {"hr.md"},
+        use_llm_judge=False,
+    )
+    assert bad_cit.metrics.citation_valid is False
+    assert bad_cit.metrics.groundedness < 1.0

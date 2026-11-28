@@ -42,3 +42,24 @@ def test_hybrid_retriever_ranks_relevant_above_off_topic(tmp_path: Path) -> None
 
     miss = ret.search("What is the price of crude oil futures?", RetrievalConfig(top_k=2, min_score_threshold=0.25))
     assert miss == []
+
+
+def test_subquery_decomposition_surfaces_multiple_documents(tmp_path: Path) -> None:
+    (tmp_path / "leave.md").write_text(
+        "# Leave Rules\nShore staff receive 24 days annual leave and 12 days sick leave.\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "expenses.md").write_text(
+        "# Travel Meals\nDomestic travel meals are capped at USD 55 per day with receipts.\n",
+        encoding="utf-8",
+    )
+    corpus = load_corpus(tmp_path)
+    chunks = chunk_corpus(corpus, chunk_size=200, chunk_overlap=20)
+    ret = HybridRetriever(chunks, use_dense=False)
+    hits = ret.search_with_decomposition(
+        "What is the annual leave entitlement and what is the domestic travel meal cap?",
+        RetrievalConfig(top_k=2, min_score_threshold=0.05),
+    )
+    sources = {h.chunk.source for h in hits}
+    assert "leave.md" in sources
+    assert "expenses.md" in sources

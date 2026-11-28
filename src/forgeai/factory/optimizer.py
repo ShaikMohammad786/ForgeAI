@@ -115,6 +115,17 @@ def _apply_targeted_patch(
             changes.append(PatchChange(field_path="retrieval.hybrid_alpha", old_value=new_ret.hybrid_alpha, new_value=target_alpha, rationale="Rebalance lexical BM25 vs dense retrieval weighting"))
             new_ret.hybrid_alpha = target_alpha
 
+        # Tune chunk_size / chunk_overlap when LLM diagnosis suggests granularity change
+        if patch_payload:
+            cand_chunk = max(350, min(1000, patch_payload.retrieval_updates.chunk_size))
+            if abs(cand_chunk - new_ret.chunk_size) >= 100:
+                changes.append(PatchChange(field_path="retrieval.chunk_size", old_value=new_ret.chunk_size, new_value=cand_chunk, rationale="Adjust chunk granularity for missed context spans"))
+                new_ret.chunk_size = cand_chunk
+            cand_ov = max(60, min(200, patch_payload.retrieval_updates.chunk_overlap))
+            if abs(cand_ov - new_ret.chunk_overlap) >= 30:
+                changes.append(PatchChange(field_path="retrieval.chunk_overlap", old_value=new_ret.chunk_overlap, new_value=cand_ov, rationale="Increase overlap to preserve cross-boundary rules"))
+                new_ret.chunk_overlap = cand_ov
+
     elif dominant == "hallucination":
         new_temp = 0.0
         if new_temp != agent.temperature:
@@ -162,6 +173,19 @@ def _apply_targeted_patch(
         if addition not in new_prompt:
             changes.append(PatchChange(field_path="system_prompt", old_value=f"(len={len(new_prompt)})", new_value=f"+ {addition[:120]}", rationale="Clarify answer-vs-refuse boundary"))
             new_prompt = f"{new_prompt.rstrip()}\n\n{addition}"
+
+        # Failed-case boundary calibration: give small models a concrete failure-derived boundary contrast
+        sample_q = failed_cases[0].question[:95] if failed_cases else ""
+        if sample_q:
+            cal_line = (
+                f"BOUNDARY EXAMPLE: Answer questions documented in retrieved context, "
+                f"but REFUSE out-of-scope requests such as: \"{sample_q}\"."
+                if missed_refusals > false_refusals
+                else f"BOUNDARY EXAMPLE: Do NOT refuse documented questions like \"{sample_q}\" when retrieved context supports them."
+            )
+            if cal_line not in new_prompt:
+                changes.append(PatchChange(field_path="system_prompt.boundary_calibration", old_value="(none)", new_value=cal_line[:120], rationale="Inject concrete boundary calibration from failing case"))
+                new_prompt = f"{new_prompt.rstrip()}\n{cal_line}"
 
     else:  # prompt_defect
         addition = (

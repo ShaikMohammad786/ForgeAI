@@ -27,6 +27,7 @@ def run_regression_check(
     out_dir: str | Path,
     provider: str | None = None,
     model_name: str | None = None,
+    judge_provider: str | None = None,
     judge_model_name: str | None = None,
     gemini_api_key: str | None = None,
     use_llm_judge: bool = True,
@@ -69,6 +70,7 @@ def run_regression_check(
     factory_llm, judge_llm = build_factory_providers(
         provider=chosen_provider,
         model_name=model_name or old_agent.model_name,
+        judge_provider=judge_provider,
         judge_model_name=judge_model_name or old_agent.judge_model_name,
         gemini_api_key=gemini_api_key,
         budget=budget,
