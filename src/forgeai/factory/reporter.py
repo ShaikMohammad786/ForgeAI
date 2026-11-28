@@ -172,6 +172,22 @@ def render_report_markdown(
             f"| {sc['iteration']} | {sc['label']} | {sc['passed_cases']}/{sc['total_cases']} ({round(sc['pass_rate']*100,1)}%) | {sc['mean_composite_score']:.3f} | {sc['mean_groundedness']:.3f} | {sc['mean_fact_recall']:.3f} | {sc['refusal_accuracy']:.3f} | {sc['contract_adherence']:.3f} | {f_str} |"
         )
 
+    final_accepted = [sc for sc in report.scorecards if "[ROLLED BACK]" not in sc["label"]]
+    final_sc = final_accepted[-1] if final_accepted else (report.scorecards[-1] if report.scorecards else None)
+    if final_sc and final_sc.get("by_category"):
+        lines.extend(
+            [
+                "",
+                "## Final Pass Rate by Question Category",
+                "| Category | Passed | Total | Pass Rate | Mean Composite |",
+                "| :--- | :---: | :---: | :---: | :---: |",
+            ]
+        )
+        for cat, stats in final_sc["by_category"].items():
+            lines.append(
+                f"| `{cat}` | {int(stats.get('passed', 0))} | {int(stats.get('total', 0))} | {round(stats.get('pass_rate', 0.0)*100, 1)}% | {stats.get('mean_score', 0.0):.3f} |"
+            )
+
     lines.extend(["", "## Targeted Optimization Log"])
     if not report.iterations:
         lines.append("- No optimization patches applied (baseline already met criteria or budget stopped early).")

@@ -35,16 +35,36 @@ class _LLMGroundabilityOutput(BaseModel):
     warnings: list[str] = Field(default_factory=list)
 
 
+_REFUSAL_CLAUSE_RE = re.compile(
+    r"\b(?:while\s+refusing|refus(?:e|ing)\s+(?:to\s+answer\s+)?|must\s+refuse|do\s+not\s+answer|except\s+for)\b(.+)$",
+    re.IGNORECASE,
+)
+
+
+def split_brief_capabilities_and_refusals(brief: str) -> tuple[str, list[str]]:
+    """Separate positive requested capabilities from explicit refusal boundary clauses."""
+    m = _REFUSAL_CLAUSE_RE.search(brief)
+    if not m:
+        return brief, []
+    positive_part = brief[: m.start()].strip(" ,.;:-") or brief
+    refusal_raw = m.group(1).strip(" .")
+    refusal_items = [
+        re.sub(r"\s+", " ", p).strip(" ,:-")
+        for p in re.split(r",|\bor\b|\band\b", refusal_raw, flags=re.I)
+        if len(p.strip(" ,:-")) >= 5
+    ]
+    return positive_part, list(dict.fromkeys(refusal_items))
+
+
 def _extract_candidate_topics(brief: str) -> list[str]:
-    """Deterministically split a 1-paragraph brief into testable capability clauses."""
-    # Split on sentence punctuation, semicolons, and major conjunction clauses
-    raw_parts = re.split(r"[.;\n]+|\band\b|\bplus\b|\balso\b", brief, flags=re.I)
+    """Deterministically split positive brief capabilities into testable clauses."""
+    positive_brief, _ = split_brief_capabilities_and_refusals(brief)
+    raw_parts = re.split(r"[.;\n]+|\band\b|\bplus\b|\balso\b", positive_brief, flags=re.I)
     topics: list[str] = []
     for part in raw_parts:
         clean = re.sub(r"\s+", " ", part).strip(" ,:-")
-        # Strip generic lead-ins like "I need an assistant that answers"
         clean = re.sub(
-            r"^(i\s+need\s+(an?\s+)?(ai\s+)?(assistant|agent|bot)\s+(that|to|for)\s+)",
+            r"^(i\s+need\s+(an?\s+)?(ai\s+)?(assistant|agent|bot)\s+(that|to|for)\s+|build\s+(an?\s+)?(ai\s+)?(assistant|agent|bot)\s+(that|to|for)\s+)",
             "",
             clean,
             flags=re.I,
@@ -53,7 +73,7 @@ def _extract_candidate_topics(brief: str) -> list[str]:
             topics.append(clean[:140])
 
     if not topics:
-        topics = [brief.strip()[:160]]
+        topics = [positive_brief.strip()[:160]]
     return list(dict.fromkeys(topics))[:8]
 
 

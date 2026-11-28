@@ -6,7 +6,10 @@ from typing import Callable
 
 from pydantic import BaseModel, Field
 
-from forgeai.factory.groundability import audit_groundability
+from forgeai.factory.groundability import (
+    audit_groundability,
+    split_brief_capabilities_and_refusals,
+)
 from forgeai.ingestion.loader import LoadedCorpus
 from forgeai.llm.base import LLMProvider
 from forgeai.prompts import render_prompt
@@ -220,6 +223,10 @@ def run_intake_interview(
         ]
 
     clean_must_refuse = list(synth.must_refuse_topics)
+    _, brief_refusal_clauses = split_brief_capabilities_and_refusals(brief)
+    for clause in brief_refusal_clauses:
+        if clause not in clean_must_refuse:
+            clean_must_refuse.append(clause)
     for unsup in groundability.unsupported_requests:
         label = f"[Unsupported in docs] {unsup}"
         if label not in clean_must_refuse and unsup not in clean_must_refuse:

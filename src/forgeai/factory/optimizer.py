@@ -154,7 +154,10 @@ def _apply_targeted_patch(
             addition = (
                 patch_payload.prompt_addition.strip()
                 if (patch_payload and patch_payload.prompt_addition.strip())
-                else f"STRICT REFUSAL RULE: When asked about unsupported or missing policies, ALWAYS set refused=true and start answer with \"{agent.output_contract.refusal_phrase_prefix}\"."
+                else (
+                    f"STRICT REFUSAL RULE: If a question asks about {', '.join(agent.must_refuse_topics[:4]) or 'unsupported topics'} "
+                    f"or lacks evidence in context, ALWAYS set refused=true and start answer with \"{agent.output_contract.refusal_phrase_prefix}\"."
+                )
             )
         if addition not in new_prompt:
             changes.append(PatchChange(field_path="system_prompt", old_value=f"(len={len(new_prompt)})", new_value=f"+ {addition[:120]}", rationale="Clarify answer-vs-refuse boundary"))
@@ -258,8 +261,10 @@ def run_optimization_loop(
         toks_delta = budget.total_tokens - toks_before
         dur = round(time.monotonic() - t0, 2)
 
-        score_delta = new_card.mean_composite_score - best_card.mean_composite_score
-        pass_delta = new_card.pass_rate - best_card.pass_rate
+        prev_best_score = best_card.mean_composite_score
+        prev_best_pass = best_card.pass_rate
+        score_delta = new_card.mean_composite_score - prev_best_score
+        pass_delta = new_card.pass_rate - prev_best_pass
         improved = (pass_delta > 0) or (pass_delta == 0 and score_delta >= 0.005)
 
         if improved:
@@ -287,9 +292,9 @@ def run_optimization_loop(
                 failure_ids_addressed=target_ids or all_cat_ids[:5],
                 diagnosis_summary=diagnosis,
                 changes=changes,
-                score_before=scorecards[0].mean_composite_score if it == 1 else best_card.mean_composite_score if not accepted else round(best_card.mean_composite_score - score_delta, 4),
+                score_before=prev_best_score,
                 score_after=new_card.mean_composite_score,
-                pass_rate_before=round(best_card.pass_rate - (pass_delta if accepted else 0.0), 4),
+                pass_rate_before=prev_best_pass,
                 pass_rate_after=new_card.pass_rate,
                 accepted=accepted,
                 decision_reason=decision,

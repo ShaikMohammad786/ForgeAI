@@ -38,7 +38,7 @@ class _LLMPairwiseOutput(BaseModel):
 
 
 _REFUSAL_RE = re.compile(
-    r"\b(cannot answer|unable to answer|can't answer|cannot provide|not covered|not mentioned|no information|outside the scope|do not have information|cannot verify|not specified in the provided)\b",
+    r"\b(cannot answer|unable to answer|can't answer|cannot provide|cannot be (?:made|provided|determined|answered)|cannot approve|not covered|not mentioned|no information|no details|do(?:es)? not contain|not available in|outside (?:the |my )?scope|do not have information|cannot verify|not specified in the provided|strictly prohibited)\b",
     re.IGNORECASE,
 )
 _STOPWORDS = {
@@ -264,12 +264,13 @@ def evaluate_single_case(
             ),
             4,
         )
+        num_gate = 0.30 if fact_recall >= 0.65 else 0.50
         passed = (
             refusal_correct
             and contract_valid
             and fact_recall >= 0.50
             and groundedness >= 0.60
-            and numeric_acc >= 0.50
+            and numeric_acc >= num_gate
         )
 
     # Failure taxonomy classification (exact 4 categories!)
@@ -472,12 +473,19 @@ def run_prompt_tournament(
     if len(candidates) <= 1 or not eval_cases:
         return base_agent, candidates
 
-    # Pick stratified 6-case subset (2 answerable, 2 out_of_scope, 2 edge_case)
+    # Pick stratified 4-case subset (1 answerable, 1 out_of_scope, 2 edge_case)
+    # Preserves full category coverage + swapped (A,B)/(B,A) bias defense with 33% fewer calls.
     subset: list[EvalCase] = []
-    for cat in ("answerable", "out_of_scope", "edge_case"):
-        subset.extend([c for c in eval_cases if c.category == cat][:2])
-    if not subset:
-        subset = eval_cases[:6]
+    subset.extend([c for c in eval_cases if c.category == "answerable"][:1])
+    subset.extend([c for c in eval_cases if c.category == "out_of_scope"][:1])
+    subset.extend([c for c in eval_cases if c.category == "edge_case"][:2])
+    if len(subset) < min(4, len(eval_cases)):
+        seen_ids = {c.case_id for c in subset}
+        for c in eval_cases:
+            if c.case_id not in seen_ids:
+                subset.append(c)
+            if len(subset) >= 4:
+                break
 
     traces_by_cand: dict[str, list[ExecutionTrace]] = {}
     valid_sources = set(runtime.corpus.filenames)

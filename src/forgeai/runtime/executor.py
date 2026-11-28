@@ -184,7 +184,7 @@ class AgentRuntime:
 
             resp = AgentResponse.model_validate(data)
             if not resp.refused and re.search(
-                r"\b(cannot answer|unable to answer|not covered in the provided|outside the scope|cannot verify)\b",
+                r"\b(cannot answer|unable to answer|cannot be (?:made|provided|determined|answered)|cannot approve|do(?:es)? not contain|not available in|not covered in the provided|outside (?:the |my )?scope|cannot verify)\b",
                 resp.answer,
                 re.I,
             ):
@@ -197,7 +197,7 @@ class AgentRuntime:
             clean = raw_text.strip() or self.agent.output_contract.refusal_phrase_prefix
             looks_refused = bool(
                 re.search(
-                    r"\b(cannot answer|unable to answer|not covered|not mentioned|no information|out of scope)\b",
+                    r"\b(cannot answer|unable to answer|cannot be (?:made|provided|determined|answered)|cannot approve|do(?:es)? not contain|not available in|not covered|not mentioned|no information|out of scope)\b",
                     clean,
                     re.I,
                 )
@@ -312,9 +312,9 @@ class AgentRuntime:
                 tool_outputs.append({"tool": t_name, "args": t_args, "output": obs})
                 messages.append({"role": "assistant", "content": json.dumps(parsed)})
                 follow_up = (
-                    "If another authorized tool (e.g. calculator) is needed, return Option A; otherwise return Option B final JSON with exact grounded answer and citations."
+                    "Use ONLY exact values from TOOL OBSERVATION and RETRIEVED CONTEXT. If another authorized tool (e.g. calculator) is needed, return Option A; otherwise return Option B final JSON with exact grounded answer and citations."
                     if step < max_steps - 1
-                    else "Now return Option B final JSON with exact grounded answer and citations."
+                    else "Use ONLY exact values from TOOL OBSERVATION and RETRIEVED CONTEXT. Now return Option B final JSON with exact grounded answer and citations."
                 )
                 messages.append(
                     {

@@ -114,6 +114,16 @@ _DATE_PATTERNS = re.compile(
 )
 
 
+def _positive_brief_only(brief: str) -> str:
+    """Strip explicit refusal boundary phrases ('while refusing ...') before checking tool intent."""
+    return re.sub(
+        r"\b(?:while\s+refusing|refus(?:e|ing)\s+(?:to\s+answer\s+)?|must\s+refuse|do\s+not\s+answer|except\s+for)\b.+$",
+        "",
+        brief,
+        flags=re.IGNORECASE,
+    ).strip()
+
+
 def evaluate_tool_eligibility(
     brief: str,
     corpus: LoadedCorpus,
@@ -122,8 +132,9 @@ def evaluate_tool_eligibility(
     eligible: list[ToolSpec] = []
     rejected: dict[str, str] = {}
 
+    positive_brief = _positive_brief_only(brief)
     has_json = any(d.summary.doc_type == "json" for d in corpus.documents)
-    combined_hints = brief + "\n" + " ".join(corpus.filenames) + "\n" + " ".join(
+    combined_hints = positive_brief + "\n" + " ".join(corpus.filenames) + "\n" + " ".join(
         d.summary.preview for d in corpus.documents
     )
 
@@ -136,19 +147,19 @@ def evaluate_tool_eligibility(
             rejected[name] = "Excluded deterministically: no JSON record files exist in the document corpus."
             continue
 
-        if spec.weather_intent_required and not _WEATHER_PATTERNS.search(brief):
+        if spec.weather_intent_required and not _WEATHER_PATTERNS.search(positive_brief):
             rejected[name] = (
                 "Excluded deterministically: user brief does not request weather or meteorological data."
             )
             continue
 
-        if spec.fx_intent_required and not _FX_PATTERNS.search(brief):
+        if spec.fx_intent_required and not _FX_PATTERNS.search(positive_brief):
             rejected[name] = (
                 "Excluded deterministically: user brief does not request currency conversion or FX rates."
             )
             continue
 
-        if spec.unit_intent_required and not (_UNIT_PATTERNS.search(brief) or _UNIT_PATTERNS.search(combined_hints)):
+        if spec.unit_intent_required and not (_UNIT_PATTERNS.search(positive_brief) or _UNIT_PATTERNS.search(combined_hints)):
             rejected[name] = (
                 "Excluded deterministically: no engineering/logistics unit conversion intent detected."
             )

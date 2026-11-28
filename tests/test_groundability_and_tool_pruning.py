@@ -86,3 +86,20 @@ def test_eval_gen_purity_and_dedup_filters(tmp_path: Path) -> None:
     # Near-duplicate paraphrase detection
     seen = {"what is the maximum annual leave carry forward allowed?"}
     assert _is_near_duplicate_question("What is the maximum annual leave carry forward allowed into next year?", seen) is True
+
+
+def test_refusal_clause_in_brief_does_not_trigger_weather_or_false_gap(tmp_path: Path) -> None:
+    (tmp_path / "policy.txt").write_text(
+        "Shore staff receive 24 paid annual leave days and 12 paid sick leave days.",
+        encoding="utf-8",
+    )
+    corpus = load_corpus(tmp_path)
+    llm = _NeutralLLM("dummy")
+    brief = "Answer HR annual leave questions for shore staff, while refusing medical advice or weather forecasts."
+    elig, rejected = evaluate_tool_eligibility(brief, corpus)
+    assert "open_meteo_weather" not in {t.name for t in elig}
+    assert "open_meteo_weather" in rejected
+
+    req = run_intake_interview(brief, corpus, llm)
+    assert any("weather" in r.lower() or "medical" in r.lower() for r in req.must_refuse_topics)
+    assert req.groundability.overall_status != "ungroundable"

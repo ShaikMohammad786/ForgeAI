@@ -83,6 +83,8 @@ def _is_false_out_of_scope(question: str, retriever: HybridRetriever) -> bool:
 
 def _fact_grounded_in_corpus(fact: str, corpus_text_lower: str) -> bool:
     """Verify an auto-generated key_fact genuinely aligns with document contents."""
+    if "examples=[" in fact.lower() or "total rows:" in fact.lower():
+        return False
     # All numbers/codes in the fact must appear in the corpus!
     nums = re.findall(r"\b\d+(?:\.\d+)?\b", fact)
     for num in nums:
@@ -106,7 +108,13 @@ def _select_stratified_chunks(
 ) -> list[DocumentChunk]:
     by_doc: dict[str, list[DocumentChunk]] = {}
     for c in chunks:
+        # Exclude pure schema-metadata cards so LLM eval gen tests actual rules/rows
+        if c.page_or_row == "Schema":
+            continue
         by_doc.setdefault(c.source, []).append(c)
+    if not by_doc:
+        for c in chunks:
+            by_doc.setdefault(c.source, []).append(c)
 
     selected: list[DocumentChunk] = []
     for doc_chunks in by_doc.values():
@@ -135,6 +143,11 @@ def _deterministic_corpus_fallback_cases(
                 s.strip()
                 for s in re.split(r"(?<=[.!?])\s+|\n+", sec.text)
                 if len(s.strip()) > 28
+                and not re.match(
+                    r"^(Effective\s+(Date|Year)|Version\s+\d|Scope:|CSV Table:|Total Rows:|Columns\s*\()",
+                    s.strip(),
+                    re.I,
+                )
             ]
             for s_idx, sent in enumerate(sentences[:4]):
                 if len(extra) >= needed:

@@ -215,3 +215,31 @@ def test_judge_clamps_fact_recall_when_small_judge_splits_facts() -> None:
     )
     assert 0.0 <= verdict.metrics.fact_recall <= 1.0
     assert verdict.passed is True
+
+
+def test_judge_recognizes_natural_refusal_and_filters_schema_examples() -> None:
+    from forgeai.factory.eval_gen import _fact_grounded_in_corpus
+
+    assert _fact_grounded_in_corpus("lead_time_days: examples=['10', '25']", "lead_time_days 10 25") is False
+
+    judge = _SimpleJudge("j")
+    oos = EvalCase(
+        case_id="o_nat",
+        category="out_of_scope",
+        question="Compare competitor pricing?",
+        expected_behavior="refuse",
+    )
+    verdict = evaluate_single_case(
+        oos,
+        ExecutionTrace(
+            response=AgentResponse(
+                answer="The provided documents do not contain information on competitors, so a comparison cannot be made.",
+                refused=False,
+            )
+        ),
+        judge,
+        {"a.pdf"},
+        use_llm_judge=False,
+    )
+    assert verdict.actual_refused is True
+    assert verdict.passed is True

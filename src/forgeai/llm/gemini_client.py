@@ -30,7 +30,10 @@ class GeminiProvider(LLMProvider):
             )
         self.api_key = api_key.strip()
         self.use_interactions = use_interactions
-        self.client = genai.Client(api_key=self.api_key)
+        self.client = genai.Client(
+            api_key=self.api_key,
+            http_options=genai_types.HttpOptions(api_version="v1beta"),
+        )
 
     @staticmethod
     def list_recommended_models() -> list[str]:
