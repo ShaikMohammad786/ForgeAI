@@ -272,3 +272,38 @@ def test_judge_rejects_fabricated_citation_excerpt() -> None:
     )
     assert bad_cit.metrics.citation_valid is False
     assert bad_cit.metrics.groundedness < 1.0
+
+
+def test_policy_prohibition_is_not_false_refusal_and_section_ids_ignored() -> None:
+    from forgeai.factory.judge import _compute_numeric_accuracy
+
+    assert _compute_numeric_accuracy(["3.1 Gifts and Hospitality in HR-POL-01 limit USD 50"], "Nominal gifts exceeding USD 50 must be declined.") == 1.0
+
+    judge = _SimpleJudge("j")
+    chunk = DocumentChunk("id1", "code.pdf", "code.pdf", "pdf", "P1", "Gifts", "Bribery, kickbacks, and cash equivalents are strictly prohibited. Nominal gifts exceeding USD 50 must be declined.")
+    hit = RetrievedChunk(chunk=chunk, score=0.9, bm25_score=0.9, dense_score=0.9)
+    case = EvalCase(
+        case_id="c_gift",
+        category="answerable",
+        question="What is the rule on gifts and bribery?",
+        expected_behavior="answer",
+        source_documents=["code.pdf"],
+        key_facts=["Bribery and cash equivalents are strictly prohibited and gifts exceeding USD 50 must be declined."],
+    )
+    verdict = evaluate_single_case(
+        case,
+        ExecutionTrace(
+            response=AgentResponse(
+                answer="Bribery and cash equivalents are strictly prohibited, and gifts exceeding USD 50 must be declined.",
+                citations=[{"source": "code.pdf", "excerpt": "strictly prohibited"}],
+                refused=False,
+            ),
+            retrieved_chunks=[hit],
+        ),
+        judge,
+        {"code.pdf"},
+        use_llm_judge=False,
+    )
+    assert verdict.actual_refused is False
+    assert verdict.passed is True
+

@@ -38,7 +38,7 @@ class _LLMPairwiseOutput(BaseModel):
 
 
 _REFUSAL_RE = re.compile(
-    r"\b(cannot answer|unable to answer|can't answer|cannot provide|cannot be (?:made|provided|determined|answered)|cannot approve|not covered|not mentioned|no information|no details|do(?:es)? not contain|not available in|outside (?:the |my )?scope|do not have information|cannot verify|not specified in the provided|strictly prohibited)\b",
+    r"\b(cannot answer|unable to answer|can't answer|cannot provide|cannot be (?:made|provided|determined|answered)|cannot approve|not covered|not mentioned|no information|no details|do(?:es)? not contain|not available in|outside (?:the |my )?scope|do not have information|cannot verify|not specified in the provided)\b",
     re.IGNORECASE,
 )
 _STOPWORDS = {
@@ -48,7 +48,10 @@ _STOPWORDS = {
 
 
 def _extract_numbers(text: str) -> list[str]:
-    return re.findall(r"\b\d+(?:\.\d+)?%?\b", text.replace(",", ""))
+    # Strip leading section numbers (e.g. "3.1 Gifts...") and document codes (e.g. "HR-POL-01")
+    cleaned = re.sub(r"(?:^|\s)\d+(?:\.\d+)+(?=\s+[A-Z])", " ", text)
+    cleaned = re.sub(r"\b[A-Z]{2,}(?:-[A-Z]{2,})+-\d+\b", " ", cleaned)
+    return re.findall(r"\b\d+(?:\.\d+)?%?\b", cleaned.replace(",", ""))
 
 
 def _det_fact_match(fact: str, answer: str) -> bool:

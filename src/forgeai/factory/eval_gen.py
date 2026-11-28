@@ -76,7 +76,7 @@ def _is_false_out_of_scope(question: str, retriever: HybridRetriever) -> bool:
         RetrievalConfig(top_k=2, hybrid_alpha=0.0, min_score_threshold=0.0),
         apply_threshold=False,
     )
-    if hits and hits[0].bm25_score >= 0.45:
+    if hits and hits[0].bm25_score >= 0.28:
         return True
     return False
 
@@ -139,15 +139,22 @@ def _deterministic_corpus_fallback_cases(
         for sec in doc.sections:
             if len(extra) >= needed:
                 break
+            raw_text = (
+                sec.text
+                if doc.summary.doc_type in {"csv", "tsv", "xlsx"}
+                else re.sub(r"\s*\n+\s*", " ", sec.text)
+            )
+            split_pat = r"(?<=[.!?])\s+|\n+" if doc.summary.doc_type in {"csv", "tsv", "xlsx"} else r"(?<=[.!?])\s+"
             sentences = [
                 s.strip()
-                for s in re.split(r"(?<=[.!?])\s+|\n+", sec.text)
-                if len(s.strip()) > 28
+                for s in re.split(split_pat, raw_text)
+                if len(s.strip()) >= 35
                 and not re.match(
-                    r"^(Effective\s+(Date|Year)|Version\s+\d|Scope:|CSV Table:|Total Rows:|Columns\s*\()",
+                    r"^(Effective\s+(Date|Year)|Version\s+\d|Scope:|CSV Table:|Total Rows:|Columns\s*\(|\d+(?:\.\d+)+\s+[A-Z][^.]*$)",
                     s.strip(),
                     re.I,
                 )
+                and not s.strip().endswith(("&", ":", "-"))
             ]
             for s_idx, sent in enumerate(sentences[:4]):
                 if len(extra) >= needed:

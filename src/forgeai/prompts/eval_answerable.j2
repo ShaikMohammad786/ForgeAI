@@ -15,9 +15,9 @@ Generate {{ num_cases }} diverse test cases:
 
 CRITICAL RULES:
 1. Every `key_facts` entry MUST be an exact, verifiable atomic fact (including exact numbers, durations, amounts, SKUs, or rules) directly stated in DOCUMENT CHUNKS above.
-2. Never invent facts not present in DOCUMENT CHUNKS.
-3. Keep `source_documents` as exact filenames shown in `[Source: ...]` headers.
-4. `expected_behavior` must be "answer".
+2. STRICT QUESTION FOCUS: Include ONLY facts in `key_facts` that are strictly required to answer THAT specific `question` — NEVER mix in unrelated rules, numbers, or office hours from other paragraphs.
+3. Never emit bare section titles or headers (e.g. "3.1 Gifts...") without the actual rule sentence.
+4. Keep `source_documents` as exact filenames shown in `[Source: ...]` headers and set `expected_behavior` to "answer".
 
 Respond ONLY with valid JSON:
 {

@@ -52,8 +52,8 @@ class ForgeSettings(BaseSettings):
 
     # Budget & optimizer defaults
     max_iterations: int = Field(default=3, alias="FORGEAI_MAX_ITERATIONS")
-    max_tokens_budget: int = Field(default=250_000, alias="FORGEAI_MAX_TOKENS_BUDGET")
-    max_seconds_budget: float = Field(default=900.0, alias="FORGEAI_MAX_SECONDS_BUDGET")
+    max_tokens_budget: int = Field(default=400_000, alias="FORGEAI_MAX_TOKENS_BUDGET")
+    max_seconds_budget: float = Field(default=1200.0, alias="FORGEAI_MAX_SECONDS_BUDGET")
     min_gain_threshold: float = Field(default=0.02, alias="FORGEAI_MIN_GAIN_THRESHOLD")
     eval_case_target: int = Field(default=24, alias="FORGEAI_EVAL_CASE_TARGET")
 
